@@ -1,0 +1,40 @@
+{
+  "id": 10012,
+  "vip": true,
+  "style": 3,
+  "themeColor": "#E75227",
+  "textBlackColor": "#2C2D2F",
+  "textWhiteColor": "#FFFFFF",
+  "dividerColor": "#33000000",
+  "backgroundRes": null,
+  "backAlign": 0,
+  "weightFive": 2.77,
+  "weightFour": 2.45,
+  "weightSix": 2.56,
+  "top": {
+    "changeByTheme": true,
+    "headChangeByTheme": true,
+    "titleTextColor": "#FFFFFF",
+    "titleThemeColor": false,
+    "logoTextColor": "#FFFFFF",
+    "logoBgRes": null,
+    "headBgRes": "#E75227",
+    "head1Style": 0
+  },
+  "item": {
+    "textColor": "#2C2D2F",
+    "titleTextColor": "#FFFFFF",
+    "chartBottomDivColor": "#33000000",
+    "chartDivColor": "#00FFFFFF",
+    "chartHightLightColor": "#1AE75227",
+    "chartNormalColor": "#00FFFFFF",
+    "changeByTheme": true,
+    "chartHightLightByTheme": true,
+    "itemTextBold": false,
+    "itemTopOuterLine": false,
+    "itemListOuterLine": false,
+    "itemBottomBlock": true,
+    "itemBottomLine": true,
+    "itemBottomToDividerColor": false
+  }
+}

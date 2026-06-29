@@ -1,0 +1,664 @@
+// lib/core/services/pdf/templates/creative_batch.dart
+import 'dart:typed_data';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:noble_invoice/features/invoicing/models/invoice_model.dart';
+import 'package:noble_invoice/features/invoicing/models/business_info.dart';
+import 'package:noble_invoice/core/services/pdf/pdf_widgets.dart';
+import 'package:noble_invoice/features/invoicing/models/pdf_template.dart';
+
+class CreativeBatch {
+  // Asset image cache
+  static final Map<String, Uint8List?> _assetCache = {};
+
+  static Future<Uint8List?> _loadAsset(String path) async {
+    if (_assetCache.containsKey(path)) return _assetCache[path];
+    try {
+      final data = await rootBundle.load(path);
+      final bytes = data.buffer.asUint8List();
+      _assetCache[path] = bytes;
+      return bytes;
+    } catch (_) {
+      _assetCache[path] = null;
+      return null;
+    }
+  }
+
+  static Future<pw.Widget> buildAsync(
+    PdfTemplate template,
+    Invoice invoice,
+    BusinessInfo biz,
+    pw.Font font,
+    pw.Font bold,
+    PdfColor brandColor,
+    Uint8List? logoBytes,
+  ) async {
+    final theme = _getTheme(template);
+    Uint8List? headerImg;
+
+    if (template == PdfTemplate.creative01) {
+      headerImg = await _loadAsset('assets/images/templates/creative01_bg.png');
+    } else if (template == PdfTemplate.creative02) {
+      headerImg = await _loadAsset('assets/images/templates/creative02_bg.png');
+    } else if (template == PdfTemplate.creative06) {
+      headerImg = await _loadAsset('assets/images/templates/creative06_bg.png');
+    } else if (template == PdfTemplate.creative07) {
+      headerImg = await _loadAsset('assets/images/templates/creative07_bg.png');
+    } else if (template == PdfTemplate.creative08) {
+      headerImg = await _loadAsset('assets/images/templates/creative08_bg.png');
+    } else if (template == PdfTemplate.creative09) {
+      headerImg = await _loadAsset('assets/images/templates/creative09_bg.png');
+    } else if (template == PdfTemplate.creative10) {
+      headerImg = await _loadAsset('assets/images/templates/creative10_bg.png');
+    }
+
+    return _buildPage(template, invoice, biz, font, bold, theme, logoBytes, headerImg);
+  }
+
+  static pw.Widget build(
+    PdfTemplate template,
+    Invoice invoice,
+    BusinessInfo biz,
+    pw.Font font,
+    pw.Font bold,
+    PdfColor brandColor,
+    Uint8List? logoBytes,
+  ) {
+    final theme = _getTheme(template);
+    return _buildPage(template, invoice, biz, font, bold, theme, logoBytes, null);
+  }
+
+  static pw.Widget _buildPage(
+    PdfTemplate template,
+    Invoice invoice,
+    BusinessInfo biz,
+    pw.Font font,
+    pw.Font bold,
+    _ThemeData theme,
+    Uint8List? logoBytes,
+    Uint8List? headerImg,
+  ) {
+    return pw.Stack(children: [
+      // Full-page background (creative04, creative05)
+      if (theme.fullPageBg != null) theme.fullPageBg!,
+
+      pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          // ── HEADER ──────────────────────────────────────────────
+          _buildHeaderSection(template, biz, logoBytes, theme, font, bold, headerImg),
+
+          // ── BODY ────────────────────────────────────────────────
+          pw.Expanded(
+            child: pw.Padding(
+              padding: const pw.EdgeInsets.fromLTRB(40, 28, 40, 20),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  // Bill To + Invoice Details
+                  _buildInfoGrid(invoice, biz, font, bold, theme),
+                  pw.SizedBox(height: 24),
+
+                  // Item Table
+                  _buildTable(invoice, font, bold, theme),
+                  pw.SizedBox(height: 12),
+
+                  // Footer (Payment + Totals + TOTAL bar)
+                  _buildFooter(invoice, biz, font, bold, theme),
+                  pw.Spacer(),
+
+                  // Signature
+                  pw.Align(
+                    alignment: pw.Alignment.centerRight,
+                    child: PdfWidgets.signatureBlock(invoice, font, bold),
+                  ),
+                  pw.SizedBox(height: 12),
+
+                  // Terms
+                  pw.Text('Terms & Policy',
+                    style: pw.TextStyle(font: bold, fontSize: 9, color: theme.bodyColor)),
+                  pw.SizedBox(height: 3),
+                  pw.Text(
+                    invoice.notes ?? 'All payments must be received within 30 days. Late payment results in a 1.5% fee per day.',
+                    style: pw.TextStyle(font: font, fontSize: 7.5, color: PdfColors.grey700),
+                    maxLines: 2,
+                  ),
+
+                  pw.SizedBox(height: 8),
+                  pw.Center(
+                    child: pw.Text('Generated by NobleInvoice',
+                      style: pw.TextStyle(font: font, fontSize: 7,
+                        color: PdfWidgets.applyOpacity(theme.bodyColor, 0.3))),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+
+      // Bottom edge bar
+      if (theme.bottomEdge != null) theme.bottomEdge!,
+    ]);
+  }
+
+  // ── HEADER SECTION ────────────────────────────────────────────────────────
+
+  static pw.Widget _buildHeaderSection(
+    PdfTemplate template, BusinessInfo biz, Uint8List? logo,
+    _ThemeData theme, pw.Font font, pw.Font bold, Uint8List? headerImg,
+  ) {
+    pw.Widget? bgWidget;
+
+    if (headerImg != null) {
+      // Image-based header (creative01, 02, 03)
+      bgWidget = pw.Image(pw.MemoryImage(headerImg),
+        width: double.infinity, height: 160, fit: pw.BoxFit.cover);
+    } else if (theme.headerGradient != null) {
+      // Gradient vector header (creative04, 05)
+      bgWidget = pw.Container(
+        decoration: pw.BoxDecoration(gradient: theme.headerGradient),
+        child: _drawHeaderDecorations(template),
+      );
+    }
+
+    return pw.SizedBox(
+      height: 160,
+      child: pw.Stack(children: [
+        // Background
+        pw.Positioned.fill(
+          child: bgWidget ?? pw.Container(color: theme.accent),
+        ),
+        // Overlay content
+        pw.Positioned.fill(
+          child: pw.Padding(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+            child: _buildHeaderRow(biz, logo, theme, font, bold),
+          ),
+        ),
+      ]),
+    );
+  }
+
+  static pw.Widget _drawHeaderDecorations(PdfTemplate template) {
+    if (template == PdfTemplate.creative04) {
+      // Soft pink/blue — subtle oval shapes
+      return pw.Stack(children: [
+        pw.Positioned(right: -30, top: -20,
+          child: pw.Container(width: 180, height: 180,
+            decoration: pw.BoxDecoration(
+              color: PdfWidgets.applyOpacity(PdfColors.white, 0.12),
+              shape: pw.BoxShape.circle,
+            ))),
+        pw.Positioned(right: 80, bottom: -60,
+          child: pw.Container(width: 220, height: 220,
+            decoration: pw.BoxDecoration(
+              color: PdfWidgets.applyOpacity(PdfColors.white, 0.08),
+              shape: pw.BoxShape.circle,
+            ))),
+      ]);
+    }
+    if (template == PdfTemplate.creative05) {
+      // Dark architecture — geometric diagonal lines
+      return pw.Stack(children: [
+        for (int i = 0; i < 6; i++)
+          pw.Positioned(
+            left: 80.0 + i * 70,
+            top: 0,
+            child: pw.Transform.rotate(
+              angle: 0.35,
+              child: pw.Container(
+                width: 1.5, height: 250,
+                color: PdfWidgets.applyOpacity(PdfColors.white, 0.08 + i * 0.02),
+              ),
+            ),
+          ),
+      ]);
+    }
+    if (template == PdfTemplate.creative07) {
+      // Glassmorphism - soft light overlays
+      return pw.Stack(children: [
+        pw.Positioned(left: 40, top: 40,
+          child: pw.Container(width: 220, height: 80,
+            decoration: pw.BoxDecoration(
+              color: PdfWidgets.applyOpacity(PdfColors.white, 0.1),
+              borderRadius: pw.BorderRadius.circular(12),
+              border: pw.Border.all(color: PdfWidgets.applyOpacity(PdfColors.white, 0.2), width: 0.5),
+            ))),
+      ]);
+    }
+    if (template == PdfTemplate.creative08) {
+      // Isometric - subtle grid
+      return pw.Stack(children: [
+        for (int i = 0; i < 10; i++)
+          pw.Positioned(left: 0, right: 0, top: i * 20.0,
+            child: pw.Container(height: 0.5, color: PdfWidgets.applyOpacity(PdfColors.white, 0.05))),
+      ]);
+    }
+    return pw.SizedBox();
+  }
+
+  static pw.Widget _buildHeaderRow(
+    BusinessInfo biz, Uint8List? logo, _ThemeData theme, pw.Font font, pw.Font bold,
+  ) {
+    return pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.center,
+      children: [
+        // Logo box
+        logo != null
+          ? pw.Container(
+              width: 65, height: 65,
+              padding: const pw.EdgeInsets.all(5),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.white,
+                borderRadius: pw.BorderRadius.circular(4),
+              ),
+              child: pw.Image(pw.MemoryImage(logo), fit: pw.BoxFit.contain),
+            )
+          : pw.Container(
+              width: 65, height: 65,
+              decoration: pw.BoxDecoration(
+                color: PdfWidgets.applyOpacity(PdfColors.white, 0.2),
+                borderRadius: pw.BorderRadius.circular(4),
+              ),
+              child: pw.Center(
+                child: pw.Text(
+                  biz.name.isNotEmpty ? biz.name[0].toUpperCase() : 'N',
+                  style: pw.TextStyle(font: bold, fontSize: 28, color: PdfColors.white),
+                ),
+              ),
+            ),
+
+        pw.SizedBox(width: 16),
+
+        // Company info
+        pw.Expanded(
+          flex: 3,
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            mainAxisAlignment: pw.MainAxisAlignment.center,
+            children: [
+              pw.Text(biz.name,
+                style: pw.TextStyle(font: bold, fontSize: 11, color: theme.titleColor)),
+              pw.SizedBox(height: 4),
+              if (biz.businessAddress != null && biz.businessAddress!.isNotEmpty)
+                pw.Text(biz.businessAddress!,
+                  style: pw.TextStyle(font: font, fontSize: 8, color: theme.titleColor)),
+              if (biz.businessPhone != null && biz.businessPhone!.isNotEmpty)
+                pw.Text(biz.businessPhone!,
+                  style: pw.TextStyle(font: font, fontSize: 8, color: theme.titleColor)),
+              if (biz.businessEmail != null && biz.businessEmail!.isNotEmpty)
+                pw.Text(biz.businessEmail!,
+                  style: pw.TextStyle(font: font, fontSize: 8, color: theme.titleColor)),
+            ],
+          ),
+        ),
+
+        // INVOICE + gold badge
+        pw.Expanded(
+          flex: 2,
+          child: pw.Stack(
+            alignment: pw.Alignment.centerRight,
+            children: [
+              pw.Text('INVOICE',
+                style: pw.TextStyle(
+                  font: bold, fontSize: 26,
+                  color: theme.titleColor, letterSpacing: 1.5,
+                ),
+              ),
+              pw.Positioned(
+                top: -6, right: -6,
+                child: pw.Transform.rotate(
+                  angle: 0.7854,
+                  child: pw.Container(
+                    width: 22, height: 22,
+                    color: const PdfColor(0.957, 0.647, 0.0),
+                    child: pw.Center(
+                      child: pw.Transform.rotate(
+                        angle: -0.7854,
+                        child: pw.Text('\u2713',
+                          style: pw.TextStyle(font: bold, fontSize: 10, color: PdfColors.white)),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── INFO GRID ─────────────────────────────────────────────────────────────
+
+  static pw.Widget _buildInfoGrid(
+    Invoice invoice, BusinessInfo biz, pw.Font font, pw.Font bold, _ThemeData theme,
+  ) {
+    return pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Expanded(
+          flex: 2,
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text('BILL TO', style: pw.TextStyle(font: bold, fontSize: 9, color: theme.bodyColor)),
+              pw.SizedBox(height: 6),
+              pw.Text(invoice.client.name,
+                style: pw.TextStyle(font: bold, fontSize: 10, color: theme.bodyColor)),
+              if (invoice.client.companyName?.isNotEmpty == true)
+                pw.Text(invoice.client.companyName!,
+                  style: pw.TextStyle(font: font, fontSize: 8, color: PdfColors.grey700)),
+              if (invoice.client.address?.isNotEmpty == true)
+                pw.Text(invoice.client.address!,
+                  style: pw.TextStyle(font: font, fontSize: 8, color: PdfColors.grey700)),
+              if (invoice.client.email?.isNotEmpty == true)
+                pw.Text(invoice.client.email!,
+                  style: pw.TextStyle(font: font, fontSize: 8, color: PdfColors.grey700)),
+            ],
+          ),
+        ),
+        pw.Expanded(
+          flex: 2,
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              _kvRow('INVOICE #', 'INV${invoice.id.toString().padLeft(4, '0')}', font, bold, theme.bodyColor),
+              _kvRow('DATE', PdfWidgets.fmt(invoice.issueDate), font, bold, theme.bodyColor),
+              _kvRow('DUE DATE', PdfWidgets.fmt(invoice.dueDate), font, bold, theme.bodyColor),
+              if (invoice.metadata['po_number'] != null)
+                _kvRow('P.O. #', invoice.metadata['po_number'].toString(), font, bold, theme.bodyColor),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  static pw.Widget _kvRow(String label, String val, pw.Font font, pw.Font bold, PdfColor color) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 4),
+      child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+        pw.Text(label, style: pw.TextStyle(font: bold, fontSize: 8, color: color)),
+        pw.Text(val, style: pw.TextStyle(font: font, fontSize: 8, color: color)),
+      ]),
+    );
+  }
+
+  // ── TABLE ─────────────────────────────────────────────────────────────────
+
+  static pw.Widget _buildTable(Invoice invoice, pw.Font font, pw.Font bold, _ThemeData theme) {
+    return pw.Table(
+      columnWidths: {
+        0: const pw.FlexColumnWidth(4),
+        1: const pw.FixedColumnWidth(38),
+        2: const pw.FixedColumnWidth(65),
+        3: const pw.FixedColumnWidth(70),
+      },
+      border: pw.TableBorder(
+        horizontalInside: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+      ),
+      children: [
+        pw.TableRow(
+          decoration: pw.BoxDecoration(color: theme.tableHeaderColor),
+          children: ['Description', 'Qty', 'Price', 'Amount'].asMap().entries.map((e) =>
+            pw.Padding(
+              padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              child: pw.Text(e.value,
+                style: pw.TextStyle(font: bold, fontSize: 9, color: theme.tableHeaderText),
+                textAlign: e.key == 0 ? pw.TextAlign.left : pw.TextAlign.right),
+            ),
+          ).toList(),
+        ),
+        ...invoice.items.asMap().entries.map((e) {
+          final item = e.value;
+          final bg = e.key % 2 == 0 ? PdfColors.white : PdfColors.grey100;
+          return pw.TableRow(
+            decoration: pw.BoxDecoration(color: bg),
+            children: [
+              pw.Padding(padding: const pw.EdgeInsets.all(9),
+                child: pw.Text(item.description, style: pw.TextStyle(font: font, fontSize: 9, color: theme.bodyColor), overflow: pw.TextOverflow.clip)),
+              pw.Padding(padding: const pw.EdgeInsets.all(9),
+                child: pw.Text('${item.quantity}', style: pw.TextStyle(font: font, fontSize: 9, color: theme.bodyColor), textAlign: pw.TextAlign.right)),
+              pw.Padding(padding: const pw.EdgeInsets.all(9),
+                child: pw.Text(PdfWidgets.money(item.unitPrice, invoice.currencyCode), style: pw.TextStyle(font: font, fontSize: 9, color: theme.bodyColor), textAlign: pw.TextAlign.right)),
+              pw.Padding(padding: const pw.EdgeInsets.all(9),
+                child: pw.Text(PdfWidgets.money(item.total, invoice.currencyCode), style: pw.TextStyle(font: bold, fontSize: 9, color: theme.bodyColor), textAlign: pw.TextAlign.right)),
+            ],
+          );
+        }),
+      ],
+    );
+  }
+
+  // ── FOOTER ────────────────────────────────────────────────────────────────
+
+  static pw.Widget _buildFooter(Invoice invoice, BusinessInfo biz, pw.Font font, pw.Font bold, _ThemeData theme) {
+    return pw.Column(children: [
+      pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          // Payment method
+          pw.Expanded(
+            child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+              pw.Text('Payment Method', style: pw.TextStyle(font: bold, fontSize: 10, color: theme.bodyColor)),
+              pw.SizedBox(height: 4),
+              pw.Text(biz.bankName ?? 'Bank Transfer / Credit Card',
+                style: pw.TextStyle(font: font, fontSize: 8, color: PdfColors.grey700)),
+              if (biz.accountNumber != null)
+                pw.Text('Account: ${biz.accountNumber}',
+                  style: pw.TextStyle(font: font, fontSize: 8, color: PdfColors.grey700)),
+            ]),
+          ),
+          // Subtotals
+          pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
+            _totalRow('Subtotal', PdfWidgets.money(invoice.subtotal, invoice.currencyCode), font, bold, theme.bodyColor),
+            if (invoice.discountAmount > 0)
+              _totalRow('Discount', '- ${PdfWidgets.money(invoice.discountAmount, invoice.currencyCode)}', font, bold, theme.bodyColor),
+            _totalRow('Tax (${invoice.taxRate}%)', PdfWidgets.money(invoice.taxAmount, invoice.currencyCode), font, bold, theme.bodyColor),
+          ]),
+        ],
+      ),
+      pw.SizedBox(height: 8),
+      // Full-width TOTAL bar
+      pw.Container(
+        padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        color: theme.tableHeaderColor,
+        child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+          pw.Text('TOTAL', style: pw.TextStyle(font: bold, fontSize: 13, color: theme.tableHeaderText, letterSpacing: 1.5)),
+          pw.Text(PdfWidgets.money(invoice.totalAmount, invoice.currencyCode),
+            style: pw.TextStyle(font: bold, fontSize: 13, color: theme.tableHeaderText)),
+        ]),
+      ),
+    ]);
+  }
+
+  static pw.Widget _totalRow(String label, String val, pw.Font font, pw.Font bold, PdfColor color) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 3),
+      child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+        pw.Text(label, style: pw.TextStyle(font: font, fontSize: 9, color: color)),
+        pw.SizedBox(width: 40),
+        pw.Text(val, style: pw.TextStyle(font: bold, fontSize: 9, color: color)),
+      ]),
+    );
+  }
+
+  // ── THEMES ────────────────────────────────────────────────────────────────
+
+  static _ThemeData _getTheme(PdfTemplate template) {
+    switch (template) {
+      case PdfTemplate.creative01: // Dark Teal Net
+        return _ThemeData(
+          accent: PdfColor.fromHex('#00BCD4'),
+          titleColor: PdfColors.white,
+          bodyColor: PdfColors.grey900,
+          tableHeaderColor: PdfColor.fromHex('#111111'),
+          tableHeaderText: PdfColors.white,
+          headerGradient: pw.LinearGradient(
+            colors: [PdfColor.fromHex('#0D1B2A'), PdfColor.fromHex('#0D3043')],
+          ),
+          bottomEdge: _bottomEdge(PdfColor.fromHex('#111111'), withPageNum: true),
+        );
+
+      case PdfTemplate.creative02: // Blue Low-Poly
+        return _ThemeData(
+          accent: PdfColor.fromHex('#4A6FA5'),
+          titleColor: PdfColors.white,
+          bodyColor: PdfColors.grey900,
+          tableHeaderColor: PdfColor.fromHex('#4A6FA5'),
+          tableHeaderText: PdfColors.white,
+          headerGradient: pw.LinearGradient(
+            colors: [PdfColor.fromHex('#2C3E6A'), PdfColor.fromHex('#4A6FA5')],
+          ),
+          bottomEdge: _bottomEdge(PdfColor.fromHex('#4A6FA5')),
+        );
+
+      case PdfTemplate.creative03: // Blue Diamond Checkered
+        return _ThemeData(
+          accent: PdfColor.fromHex('#3B82F6'),
+          titleColor: PdfColors.white,
+          bodyColor: PdfColors.grey900,
+          tableHeaderColor: PdfColor.fromHex('#3B82F6'),
+          tableHeaderText: PdfColors.white,
+          headerGradient: pw.LinearGradient(
+            colors: [PdfColor.fromHex('#1D4ED8'), PdfColor.fromHex('#60A5FA')],
+          ),
+          bottomEdge: _bottomEdge(PdfColor.fromHex('#3B82F6')),
+        );
+
+      case PdfTemplate.creative04: // Soft Pink/Blue Gradient
+        return _ThemeData(
+          accent: PdfColor.fromHex('#7DD3FC'),
+          titleColor: PdfColors.white,
+          bodyColor: PdfColors.grey900,
+          tableHeaderColor: PdfColor.fromHex('#7DD3FC'),
+          tableHeaderText: PdfColors.white,
+          headerGradient: pw.LinearGradient(
+            begin: pw.Alignment.topLeft,
+            end: pw.Alignment.bottomRight,
+            colors: [PdfColor.fromHex('#F9A8D4'), PdfColor.fromHex('#BAE6FD')],
+          ),
+          bottomEdge: _bottomEdge(PdfColor.fromHex('#7DD3FC')),
+        );
+
+      case PdfTemplate.creative05: // Dark Architecture
+        return _ThemeData(
+          accent: PdfColor.fromHex('#374151'),
+          titleColor: PdfColors.white,
+          bodyColor: PdfColors.grey900,
+          tableHeaderColor: PdfColor.fromHex('#1F2937'),
+          tableHeaderText: PdfColors.white,
+          headerGradient: pw.LinearGradient(
+            colors: [PdfColor.fromHex('#111827'), PdfColor.fromHex('#374151')],
+          ),
+          bottomEdge: _bottomEdge(PdfColor.fromHex('#111827'), withPageNum: true),
+        );
+
+      case PdfTemplate.creative06: // Luxury Gold Marble
+        return _ThemeData(
+          accent: PdfColor.fromHex('#D4AF37'),
+          titleColor: PdfColor.fromHex('#1A1A1A'),
+          bodyColor: PdfColors.grey900,
+          tableHeaderColor: PdfColor.fromHex('#D4AF37'),
+          tableHeaderText: PdfColors.white,
+          headerGradient: pw.LinearGradient(colors: [PdfColors.white, PdfColors.white]),
+          bottomEdge: _bottomEdge(PdfColor.fromHex('#D4AF37')),
+        );
+
+      case PdfTemplate.creative07: // Glassmorphism
+        return _ThemeData(
+          accent: PdfColor.fromHex('#7C3AED'),
+          titleColor: PdfColors.white,
+          bodyColor: PdfColors.grey900,
+          tableHeaderColor: PdfColor.fromHex('#7C3AED'),
+          tableHeaderText: PdfColors.white,
+          headerGradient: pw.LinearGradient(colors: [PdfColor.fromHex('#5B21B6'), PdfColor.fromHex('#7C3AED')]),
+          bottomEdge: _bottomEdge(PdfColor.fromHex('#7C3AED')),
+        );
+
+      case PdfTemplate.creative08: // Isometric
+        return _ThemeData(
+          accent: PdfColor.fromHex('#2563EB'),
+          titleColor: PdfColors.white,
+          bodyColor: PdfColors.grey900,
+          tableHeaderColor: PdfColor.fromHex('#1E40AF'),
+          tableHeaderText: PdfColors.white,
+          headerGradient: pw.LinearGradient(colors: [PdfColor.fromHex('#1E3A8A'), PdfColor.fromHex('#3B82F6')]),
+          bottomEdge: _bottomEdge(PdfColor.fromHex('#1E3A8A')),
+        );
+
+      case PdfTemplate.creative09: // Vintage
+        return _ThemeData(
+          accent: PdfColor.fromHex('#0F172A'),
+          titleColor: PdfColor.fromHex('#0F172A'),
+          bodyColor: PdfColor.fromHex('#1E293B'),
+          tableHeaderColor: PdfColor.fromHex('#0F172A'),
+          tableHeaderText: PdfColors.white,
+          headerGradient: pw.LinearGradient(colors: [PdfColors.white, PdfColors.white]),
+          bottomEdge: _bottomEdge(PdfColor.fromHex('#0F172A')),
+        );
+
+      case PdfTemplate.creative10: // Illustration
+        return _ThemeData(
+          accent: PdfColor.fromHex('#0D9488'),
+          titleColor: PdfColors.white,
+          bodyColor: PdfColors.grey900,
+          tableHeaderColor: PdfColor.fromHex('#0D9488'),
+          tableHeaderText: PdfColors.white,
+          headerGradient: pw.LinearGradient(colors: [PdfColor.fromHex('#0F766E'), PdfColor.fromHex('#2DD4BF')]),
+          bottomEdge: _bottomEdge(PdfColor.fromHex('#0D9488')),
+        );
+
+      default:
+        return _ThemeData(
+          accent: PdfColors.blue,
+          titleColor: PdfColors.white,
+          bodyColor: PdfColors.grey900,
+          tableHeaderColor: PdfColors.blue,
+          tableHeaderText: PdfColors.white,
+          headerGradient: pw.LinearGradient(colors: [PdfColors.blue, PdfColors.blue]),
+        );
+    }
+  }
+
+  static pw.Widget _bottomEdge(PdfColor color, {bool withPageNum = false}) {
+    return pw.Positioned(
+      bottom: 0, left: 0, right: 0,
+      child: pw.Container(
+        height: withPageNum ? 18 : 5,
+        color: color,
+        child: withPageNum
+          ? pw.Center(
+              child: pw.Text('NobleInvoice',
+                style: const pw.TextStyle(color: PdfColors.white, fontSize: 7)),
+            )
+          : null,
+      ),
+    );
+  }
+}
+
+class _ThemeData {
+  final PdfColor accent;
+  final PdfColor titleColor;
+  final PdfColor bodyColor;
+  final PdfColor tableHeaderColor;
+  final PdfColor tableHeaderText;
+  final pw.Gradient? headerGradient;
+  final pw.Widget? fullPageBg;
+  final pw.Widget? bottomEdge;
+
+  _ThemeData({
+    required this.accent,
+    required this.titleColor,
+    required this.bodyColor,
+    required this.tableHeaderColor,
+    required this.tableHeaderText,
+    this.headerGradient,
+    this.fullPageBg,
+    this.bottomEdge,
+  });
+}

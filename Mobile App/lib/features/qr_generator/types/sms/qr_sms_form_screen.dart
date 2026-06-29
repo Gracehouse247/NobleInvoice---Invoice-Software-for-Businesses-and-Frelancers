@@ -1,0 +1,174 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:noble_invoice/core/theme/app_colors.dart';
+import 'package:noble_invoice/core/theme/app_text_styles.dart';
+import 'package:noble_invoice/routes/app_routes.dart';
+import 'package:noble_invoice/features/qr_generator/controllers/qr_generator_controller.dart';
+
+class QrSmsFormScreen extends StatefulWidget {
+  const QrSmsFormScreen({super.key});
+
+  @override
+  State<QrSmsFormScreen> createState() => _QrSmsFormScreenState();
+}
+
+class _QrSmsFormScreenState extends State<QrSmsFormScreen> {
+  final _phoneController = TextEditingController();
+  final _messageController = TextEditingController();
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  void _handleGenerate() {
+    final phone = _phoneController.text.trim();
+    if (phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a recipient phone number')),
+      );
+      return;
+    }
+
+    context.read<QrGeneratorController>().updateData(
+      name: 'SMS: $phone',
+      type: 'sms',
+      content: {
+        'phoneNumber': phone,
+        'message': _messageController.text.trim(),
+      },
+    );
+
+    Navigator.pushNamed(context, AppRoutes.qrPreview);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back_ios_rounded, color: AppColors.primary, size: 20),
+        ),
+        title: Text(
+          'SMS QR Setup',
+          style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(color: AppColors.lightGrey, height: 1),
+        ),
+      ),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 120, left: 24, right: 24, top: 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Message Config',
+                  style: AppTextStyles.headlineMedium.copyWith(fontWeight: FontWeight.w900, fontSize: 24),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Generate a QR code that opens a pre-composed SMS message when scanned.',
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.darkGrey, height: 1.5),
+                ),
+                const SizedBox(height: 40),
+                
+                _buildLabel('Recipient Phone', isRequired: true),
+                TextField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    hintText: 'e.g. +1 555 123 4567',
+                    prefixIcon: Icon(Icons.phone_android_rounded, size: 20),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                _buildLabel('SMS Body (Optional)'),
+                TextField(
+                  controller: _messageController,
+                  maxLines: 6,
+                  decoration: const InputDecoration(
+                    hintText: 'Write the message you want guests to send...',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'When scanned, this will pre-fill their default messaging app.',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                    color: AppColors.darkGrey.withOpacity(0.1),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(top: BorderSide(color: AppColors.lightGrey, width: 0.5)),
+              ),
+              child: SafeArea(
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _handleGenerate,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Generate Preview'),
+                        SizedBox(width: 8),
+                        Icon(Icons.qr_code_2_rounded, size: 20),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text, {bool isRequired = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0, left: 4.0),
+      child: RichText(
+        text: TextSpan(
+          text: text,
+          style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold, color: AppColors.textBlack),
+          children: isRequired
+              ? [
+                  const TextSpan(
+                    text: ' *',
+                    style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                  ),
+                ]
+              : [],
+        ),
+      ),
+    );
+  }
+}

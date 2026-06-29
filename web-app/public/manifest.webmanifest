@@ -1,0 +1,10 @@
+{
+  "name": "NobleInvoice",
+  "short_name": "NobleInvoice",
+  "description": "Professional Invoicing & Financial Intelligence Platform.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#166FBB",
+  "orientation": "portrait"
+}

@@ -1,0 +1,23 @@
+User-agent: *
+Allow: /
+Allow: /pricing
+Allow: /features/
+Allow: /blog
+Allow: /about
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+
+Disallow: /dashboard
+Disallow: /invoices
+Disallow: /clients
+Disallow: /expenses
+Disallow: /wallet
+Disallow: /upgrade
+Disallow: /admin/
+Disallow: /api/
+Disallow: /portal/
+Disallow: /embed/
+Disallow: /q/
+
+Sitemap: https://nobleinvoice.noblesworld.com.ng/sitemap.xml

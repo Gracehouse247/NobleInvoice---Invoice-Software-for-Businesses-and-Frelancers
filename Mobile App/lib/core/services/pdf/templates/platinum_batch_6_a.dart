@@ -1,0 +1,239 @@
+// lib/core/services/pdf/templates/platinum_batch_6_a.dart
+import 'dart:typed_data';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:noble_invoice/features/invoicing/models/invoice_model.dart';
+import 'package:noble_invoice/features/invoicing/models/business_info.dart';
+import 'package:noble_invoice/core/services/pdf/pdf_widgets.dart';
+
+class PlatinumBatch6A {
+  static pw.Widget platinumMollyScriptTemplate(Invoice invoice, BusinessInfo biz, pw.Font font, pw.Font bold, PdfColor brandColor, Uint8List? logoBytes) {
+    final lightBg = PdfWidgets.applyOpacity(brandColor, 0.05);
+    final darkText = PdfColor.fromHex('#1A1A1A');
+    final textStyle = pw.TextStyle(font: font, fontSize: 10, color: darkText);
+    final boldStyle = pw.TextStyle(font: bold, fontSize: 10, color: darkText);
+
+    return pw.Column(children: [
+      pw.Container(
+        height: 180,
+        color: lightBg,
+        width: double.infinity,
+        child: pw.Center(child: pw.Column(mainAxisAlignment: pw.MainAxisAlignment.center, children: [
+          pw.Text('INVOICE', style: pw.TextStyle(font: bold, fontSize: 40, color: brandColor, letterSpacing: 12)),
+          pw.Container(height: 1, width: 200, color: brandColor, margin: const pw.EdgeInsets.symmetric(vertical: 12)),
+          pw.Text(biz.name.toUpperCase(), style: pw.TextStyle(font: font, fontSize: 12, letterSpacing: 4, color: darkText)),
+        ])),
+      ),
+
+      pw.Padding(
+        padding: const pw.EdgeInsets.all(60),
+        child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+              pw.Text('CLIENT NAME:', style: pw.TextStyle(font: bold, fontSize: 8, color: brandColor, letterSpacing: 1)),
+              pw.SizedBox(height: 8),
+              pw.Text(invoice.client.name.toUpperCase(), style: pw.TextStyle(font: bold, fontSize: 14)),
+              pw.Text(invoice.client.address ?? '', style: textStyle),
+            ]),
+            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
+              pw.Text('INVOICE NO:', style: pw.TextStyle(font: bold, fontSize: 8, color: brandColor, letterSpacing: 1)),
+              pw.Text('#${invoice.id}', style: boldStyle),
+              pw.SizedBox(height: 12),
+              pw.Text('DATE:', style: pw.TextStyle(font: bold, fontSize: 8, color: brandColor, letterSpacing: 1)),
+              pw.Text(PdfWidgets.fmt(invoice.issueDate), style: boldStyle),
+            ]),
+          ]),
+
+          pw.SizedBox(height: 48),
+          PdfWidgets.itemsTable(invoice, font, bold, brandColor),
+
+          pw.SizedBox(height: 32),
+          pw.Align(
+            alignment: pw.Alignment.centerRight,
+            child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
+               pw.Row(mainAxisSize: pw.MainAxisSize.min, children: [
+                  pw.Text('SUBTOTAL', style: textStyle),
+                  pw.SizedBox(width: 40),
+                  pw.Text(PdfWidgets.money(invoice.subtotal, invoice.currencyCode), style: boldStyle),
+               ]),
+               pw.SizedBox(height: 12),
+               pw.Container(
+                 padding: const pw.EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                 color: lightBg,
+                 child: pw.Row(mainAxisSize: pw.MainAxisSize.min, children: [
+                    pw.Text('TOTAL DUE', style: pw.TextStyle(font: bold, fontSize: 13, color: brandColor)),
+                    pw.SizedBox(width: 40),
+                    pw.Text(PdfWidgets.money(invoice.totalAmount, invoice.currencyCode), style: pw.TextStyle(font: bold, fontSize: 16, color: darkText)),
+                 ]),
+               ),
+            ]),
+          ),
+          
+          pw.SizedBox(height: 24),
+          PdfWidgets.paymentButton(invoice, brandColor),
+          pw.Spacer(),
+          pw.Center(child: pw.Text(biz.footerText ?? 'THANK YOU FOR YOUR BUSINESS', style: pw.TextStyle(font: font, fontSize: 12, fontStyle: pw.FontStyle.italic, color: brandColor))),
+          pw.SizedBox(height: 20),
+        ]),
+      ),
+    ]);
+  }
+
+  static pw.Widget platinumSalfordGeometricTemplate(Invoice invoice, BusinessInfo biz, pw.Font font, pw.Font bold, PdfColor brandColor, Uint8List? logoBytes) {
+    final darkAccent = PdfColor(brandColor.red * 0.4, brandColor.green * 0.4, brandColor.blue * 0.4);
+    final lightGrey = PdfColor.fromHex('#F8FAFC');
+    final textStyle = pw.TextStyle(font: font, fontSize: 10, color: PdfColors.black);
+
+    return pw.Row(children: [
+      pw.Container(
+        width: 100,
+        color: darkAccent,
+        child: pw.Column(mainAxisAlignment: pw.MainAxisAlignment.end, children: [
+           pw.Padding(
+             padding: const pw.EdgeInsets.only(bottom: 40),
+             child: pw.Transform.rotate(
+                angle: -1.5708,
+                child: pw.Text('NobleInvoice INVOICING', style: pw.TextStyle(font: bold, color: PdfWidgets.applyOpacity(PdfWidgets.getContrastColor(darkAccent), 0.3), fontSize: 12, letterSpacing: 4)),
+             ),
+           ),
+        ]),
+      ),
+
+      pw.Expanded(child: pw.Padding(
+        padding: const pw.EdgeInsets.all(40),
+        child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+              pw.Text('INVOICE', style: pw.TextStyle(font: bold, fontSize: 48, color: darkAccent)),
+              pw.Container(height: 4, width: 60, color: brandColor),
+            ]),
+            if (logoBytes != null) pw.Image(pw.MemoryImage(logoBytes), width: 60),
+          ]),
+
+          pw.SizedBox(height: 40),
+
+          pw.Container(
+            padding: const pw.EdgeInsets.all(24),
+            color: lightGrey,
+            child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+              pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+                pw.Text('PREPARED FOR:', style: pw.TextStyle(font: bold, fontSize: 9, color: PdfColors.grey500)),
+                pw.SizedBox(height: 4),
+                pw.Text(invoice.client.name.toUpperCase(), style: pw.TextStyle(font: bold, fontSize: 14)),
+                pw.Text(invoice.client.address ?? '', style: textStyle),
+              ]),
+              pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
+                pw.Text('TOTAL DUE:', style: pw.TextStyle(font: bold, fontSize: 9, color: PdfColors.grey500)),
+                pw.SizedBox(height: 4),
+                pw.Text(PdfWidgets.money(invoice.totalAmount, invoice.currencyCode), style: pw.TextStyle(font: bold, fontSize: 24, color: darkAccent)),
+              ]),
+            ]),
+          ),
+
+          pw.SizedBox(height: 40),
+          PdfWidgets.itemsTable(invoice, font, bold, darkAccent),
+
+          pw.SizedBox(height: 32),
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+              pw.Text('INVOICE INFO:', style: pw.TextStyle(font: bold, fontSize: 9, color: darkAccent)),
+              pw.Text('ID: #${invoice.id}', style: textStyle),
+              pw.Text('Date: ${PdfWidgets.fmt(invoice.issueDate)}', style: textStyle),
+            ]),
+            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
+               pw.Text('PAYMENT TERMS:', style: pw.TextStyle(font: bold, fontSize: 9, color: darkAccent)),
+               pw.Text('Please pay by ${PdfWidgets.fmt(invoice.dueDate)}', style: textStyle),
+            ]),
+          ]),
+
+          pw.SizedBox(height: 24),
+          PdfWidgets.paymentButton(invoice, darkAccent),
+          pw.Spacer(),
+          pw.Divider(color: darkAccent, thickness: 0.5),
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+             pw.Text(biz.name, style: pw.TextStyle(font: bold, fontSize: 10)),
+             pw.Text(biz.businessPhone ?? '', style: textStyle),
+          ]),
+        ]),
+      )),
+    ]);
+  }
+
+  static pw.Widget platinumFaugetRestaurantTemplate(Invoice invoice, BusinessInfo biz, pw.Font font, pw.Font bold, PdfColor brandColor, Uint8List? logoBytes) {
+    final cream = PdfColor.fromHex('#FEFCE8');
+    final textStyle = pw.TextStyle(font: font, fontSize: 10, color: PdfColors.black);
+    final boldStyle = pw.TextStyle(font: bold, fontSize: 10, color: PdfColors.black);
+
+    return pw.Container(
+      color: cream,
+      padding: const pw.EdgeInsets.all(40),
+      child: pw.Stack(children: [
+        pw.Positioned(
+           bottom: -50, right: -50,
+           child: pw.Opacity(opacity: 0.05, child: pw.Container(width: 400, height: 400, decoration: pw.BoxDecoration(color: brandColor, shape: pw.BoxShape.circle))),
+        ),
+
+        pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+              pw.Text(biz.name.toUpperCase(), style: pw.TextStyle(font: bold, fontSize: 32, color: brandColor, letterSpacing: 8)),
+              pw.Text(biz.industry?.toUpperCase() ?? 'BUSINESS SOLUTIONS', style: pw.TextStyle(font: font, fontSize: 10, letterSpacing: 4, color: PdfColors.grey700)),
+            ]),
+            if (logoBytes != null) pw.Image(pw.MemoryImage(logoBytes), width: 60),
+          ]),
+
+          pw.SizedBox(height: 60),
+
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+              pw.Text('INVOICED TO:', style: pw.TextStyle(font: bold, fontSize: 9, color: brandColor, letterSpacing: 2)),
+              pw.SizedBox(height: 8),
+              pw.Text(invoice.client.name.toUpperCase(), style: pw.TextStyle(font: bold, fontSize: 16)),
+              pw.Text(invoice.client.address ?? '', style: textStyle),
+            ]),
+            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
+              pw.Text('INV NO:', style: pw.TextStyle(font: bold, fontSize: 9, color: brandColor)),
+              pw.Text('#${invoice.id}', style: boldStyle),
+              pw.SizedBox(height: 12),
+              pw.Text('DATE:', style: pw.TextStyle(font: bold, fontSize: 9, color: brandColor)),
+              pw.Text(PdfWidgets.fmt(invoice.issueDate), style: boldStyle),
+            ]),
+          ]),
+
+          pw.SizedBox(height: 48),
+          PdfWidgets.itemsTable(invoice, font, bold, brandColor),
+
+          pw.SizedBox(height: 32),
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+              pw.Text('PAYMENT INFORMATION:', style: pw.TextStyle(font: bold, fontSize: 9, color: brandColor)),
+              pw.SizedBox(height: 4),
+              pw.Text('Bank: ${biz.bankName ?? "N/A"}', style: textStyle),
+              pw.Text('Account: ${biz.accountNumber ?? "N/A"}', style: textStyle),
+            ]),
+            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
+               pw.Row(mainAxisSize: pw.MainAxisSize.min, children: [
+                  pw.Text('SUBTOTAL', style: textStyle),
+                  pw.SizedBox(width: 40),
+                  pw.Text(PdfWidgets.money(invoice.subtotal, invoice.currencyCode), style: boldStyle),
+               ]),
+               pw.SizedBox(height: 8),
+               pw.Row(mainAxisSize: pw.MainAxisSize.min, children: [
+                  pw.Text('GRAND TOTAL', style: pw.TextStyle(font: bold, fontSize: 13, color: brandColor)),
+                  pw.SizedBox(width: 40),
+                  pw.Text(PdfWidgets.money(invoice.totalAmount, invoice.currencyCode), style: pw.TextStyle(font: bold, fontSize: 18)),
+               ]),
+            ]),
+          ]),
+
+          pw.SizedBox(height: 16),
+          PdfWidgets.paymentButton(invoice, brandColor),
+          pw.Spacer(),
+          pw.Divider(color: brandColor, thickness: 0.5),
+          pw.Center(child: pw.Text(biz.footerText ?? 'WE APPRECIATE YOUR BUSINESS', style: pw.TextStyle(font: bold, fontSize: 10, color: brandColor, letterSpacing: 4))),
+          pw.SizedBox(height: 20),
+        ]),
+      ]),
+    );
+  }
+}

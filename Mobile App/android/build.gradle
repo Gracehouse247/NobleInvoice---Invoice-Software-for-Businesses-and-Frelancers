@@ -1,0 +1,57 @@
+
+buildscript {
+    ext.kotlin_version = '2.1.10' // Match settings.gradle
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        // NOTE: The Android Gradle Plugin version is now often managed in settings.gradle
+        // but we can specify it here for clarity if needed.
+        classpath 'com.android.tools.build:gradle:8.7.3'
+        classpath 'com.google.gms:google-services:4.4.1'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                if (namespace == null) {
+                    namespace project.group
+                }
+                compileSdk 35
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
+                }
+                if (project.plugins.hasPlugin('kotlin-android')) {
+                    kotlinOptions {
+                        jvmTarget = '17'
+                    }
+                }
+            }
+        }
+        if (project.name == 'isar_flutter_libs') {
+            if (project.hasProperty('android')) {
+                project.android {
+                    namespace 'dev.isar.isar_flutter_libs'
+                }
+            }
+        }
+    }
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
+

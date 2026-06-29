@@ -1,0 +1,21 @@
+{
+  "name": "NobleInvoice",
+  "short_name": "NobleInvoice",
+  "description": "Secure cross-platform invoicing and digital business cards.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#F0F4F8",
+  "theme_color": "#166FBB",
+  "icons": [
+    {
+      "src": "/images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

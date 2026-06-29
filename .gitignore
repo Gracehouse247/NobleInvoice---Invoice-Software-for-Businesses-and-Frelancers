@@ -1,0 +1,31 @@
+node_modules/
+.next/
+out/
+build/
+
+# macOS
+.DS_Store
+
+# Env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Flutter
+.dart_tool/
+build/
+.pub-cache/
+.pub/
+/build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Backend (Supabase/Functions)
+*.log
+.supabase/
+
+# Secrets
+secrets.json
