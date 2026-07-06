@@ -18,11 +18,11 @@ class EnvConstants {
   static const String geminiApiKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: 'AIzaSyBlNRjUq7Zqry4QbfDU-7DWR1WPHnD-4_4');
 
   static void validate() {
-    if (supabaseUrl.isEmpty) {
-      throw Exception('SUPABASE_URL is missing. Please run with --dart-define-from-file=secrets.json');
+    if (supabaseUrl.isEmpty || supabaseUrl == 'REDACTED') {
+      print('WARNING: SUPABASE_URL is missing or REDACTED. Ensure you have valid secrets for production.');
     }
-    if (supabaseAnonKey.isEmpty) {
-      throw Exception('SUPABASE_ANON_KEY is missing.');
+    if (supabaseAnonKey.isEmpty || supabaseAnonKey == 'REDACTED') {
+      print('WARNING: SUPABASE_ANON_KEY is missing or REDACTED.');
     }
   }
 }

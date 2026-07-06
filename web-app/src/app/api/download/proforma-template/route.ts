@@ -1,6 +1,7 @@
 import PDFDocument from 'pdfkit';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 // Brand colors
 const BRAND_BLUE = '#166FBB';
@@ -30,6 +31,10 @@ export async function GET(req: NextRequest) {
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
+
+  // ── Rate Limiting (10 PDF downloads per minute per user) ──────────
+  const { allowed, resetMs } = rateLimit(`proforma-dl:${user.id}`, 10, 60_000);
+  if (!allowed) return rateLimitResponse(resetMs);
 
   // ── Build PDF ──────────────────────────────────────────────────────
   const chunks: Buffer[] = [];

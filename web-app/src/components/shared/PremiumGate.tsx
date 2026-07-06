@@ -10,14 +10,14 @@ interface PremiumGateProps {
     children: React.ReactNode;
     fallback?: React.ReactNode;
     featureName?: string;
-    tier?: 'pro' | 'elite';
+    tier?: 'pulse' | 'elite';
 }
 
 export default function PremiumGate({ 
     children, 
     fallback, 
     featureName = 'Advanced AI',
-    tier = 'pro'
+    tier = 'pulse'
 }: PremiumGateProps) {
     const { userData } = useAuth();
     const { openUpgradeModal } = useUpgradeModal();
@@ -29,7 +29,7 @@ export default function PremiumGate({
     const hasAccess = 
         userData?.plan === 'admin' || 
         userData?.plan === 'elite' || 
-        (tier === 'pro' && userData?.plan === 'pro' && userData?.subscriptionStatus === 'active');
+        (tier === 'pulse' && userData?.plan === 'pulse' && userData?.subscriptionStatus === 'active');
 
     if (hasAccess) {
         return <>{children}</>;
@@ -67,4 +67,6 @@ export default function PremiumGate({
         </div>
     );
 }
+
+
 

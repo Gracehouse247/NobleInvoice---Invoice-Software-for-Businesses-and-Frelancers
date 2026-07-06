@@ -95,8 +95,9 @@ export interface UserData {
     name: string;
     photoUrl?: string;
     lastSync?: any;
+    gamification?: GamificationModel;
     subscriptionStatus: 'active' | 'past_due' | 'cancelled' | 'expired';
-    plan: 'explorer' | 'pulse' | 'elite' | 'admin';
+    plan: 'explorer' | 'pulse' | 'elite' | 'admin' | 'payg';
     selectedGoals?: string[];
     productivityLevel?: string;
     motivationStyle?: string;
@@ -218,9 +219,9 @@ export interface GamificationModel {
     xp: number;
     level: number;
     unlockedBadges: string[];
-    tasksCompleted: number;
-    habitsLogged: number;
-    notesCreated: number;
+    invoicesSent: number;
+    paymentsReceived: number;
+    receiptsScanned: number;
     currentStreak: number;
     lastActivityDate?: Date;
 }
@@ -260,4 +261,36 @@ export interface IdentityData {
     updated_at?: string;
     is_public?: boolean;
     scan_count?: number;
+}
+
+export interface LineItem {
+    id: string;
+    description: string;
+    quantity: number;
+    unit_price: number;
+    total: number;
+}
+
+export interface Invoice {
+    id: string;
+    invoice_number: string;
+    status: 'paid' | 'overdue' | 'viewed' | 'draft' | 'sent';
+    issue_date: string;
+    due_date: string;
+    currency_code: string;
+    subtotal: number;
+    tax_amount: number;
+    discount_amount: number;
+    total_amount: number;
+    notes?: string;
+    pdf_url?: string;
+    invoice_items: LineItem[];
+    teams?: {
+        brand_logo_url?: string;
+        business_name?: string;
+    };
+    clients?: {
+        name?: string;
+        email?: string;
+    };
 }

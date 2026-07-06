@@ -27,10 +27,10 @@ export default function CashFlowChart({ invoices = [], currencyCode = 'USD' }: {
             
             // Sum paid invoices for this month
             const monthlyTotal = invoices.filter(inv => {
-                if (inv.status !== 'Paid') return false;
-                const invDate = new Date(inv.created_at || Date.now());
+                if (inv.status !== 'paid') return false;
+                const invDate = new Date(inv.issue_date || Date.now());
                 return invDate.getMonth() === d.getMonth() && invDate.getFullYear() === d.getFullYear();
-            }).reduce((sum, inv) => sum + (inv.total || 0), 0);
+            }).reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
 
             result.push({ name: monthName, value: monthlyTotal });
         }
@@ -118,7 +118,7 @@ export default function CashFlowChart({ invoices = [], currencyCode = 'USD' }: {
                                 dy={10}
                             />
                             <Tooltip
-                                formatter={(value: number) => [currencyService.format(value, currencyCode, { decimals: 0 }), 'Revenue']}
+                                formatter={(value: any) => [currencyService.format(Number(value), currencyCode, { decimals: 0 }), 'Revenue']}
                                 contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                 itemStyle={{ color: '#166FBB', fontWeight: 600 }}
                                 labelStyle={{ color: '#64748b', fontWeight: 500, fontSize: '11px', marginBottom: '4px' }}

@@ -3,11 +3,19 @@ import { createClient } from '@supabase/supabase-js';
 import { TwitterApi } from 'twitter-api-v2';
 import axios from 'axios';
 
-// Initialize Supabase Client
+// Use service role key so we can read social_accounts.access_token securely
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! // Or Service Role key if RLS applies
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+// Module-level Twitter singleton — created once, not inside the per-post loop
+const twitterClient = process.env.TWITTER_API_KEY ? new TwitterApi({
+  appKey: process.env.TWITTER_API_KEY!,
+  appSecret: process.env.TWITTER_API_SECRET!,
+  accessToken: process.env.TWITTER_ACCESS_TOKEN!,
+  accessSecret: process.env.TWITTER_ACCESS_SECRET!,
+}) : null;
 
 export async function GET(req: NextRequest) {
   // Verify Cron Secret to prevent unauthorized publishing
@@ -37,12 +45,7 @@ export async function GET(req: NextRequest) {
         let platformPostId = null;
 
         if (post.platform === 'twitter') {
-          const twitterClient = new TwitterApi({
-            appKey: process.env.TWITTER_API_KEY!,
-            appSecret: process.env.TWITTER_API_SECRET!,
-            accessToken: process.env.TWITTER_ACCESS_TOKEN!,
-            accessSecret: process.env.TWITTER_ACCESS_SECRET!,
-          });
+          if (!twitterClient) throw new Error('Twitter API keys not configured on server');
 
           // Check if content is a JSON array (thread)
           let content = post.content_text;

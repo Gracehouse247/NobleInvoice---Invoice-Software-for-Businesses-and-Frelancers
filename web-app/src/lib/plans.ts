@@ -1,7 +1,7 @@
 export interface Plan {
   id: string;
   name: string;
-  tier: 'explorer' | 'pro' | 'elite' | 'payg';
+  tier: 'explorer' | 'pulse' | 'elite' | 'payg';
   priceMonthly: number;
   priceYearly: number;
   monthlyPrice?: number;
@@ -119,7 +119,7 @@ export const PLANS: Record<string, Plan> = {
 
 export const SUBSCRIPTION_PLANS = Object.values(PLANS);
 
-export type PlanTier = 'explorer' | 'pro' | 'elite' | 'payg';
+export type PlanTier = 'explorer' | 'pulse' | 'elite' | 'payg';
 
 /** PAYG product — not a subscription, a one-time invoice template unlock */
 export const PAYG_PLAN = {

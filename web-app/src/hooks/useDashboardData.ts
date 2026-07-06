@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRealtime } from '@/components/providers/RealtimeProvider';
-import { useDashboardCache } from '@/store/useDashboardCache';
-import { useSyncStore } from '@/store/useSyncStore';
 import { teamService, invoiceService } from '@/lib/services/supabaseService';
-import { toast } from 'react-hot-toast';
+import { Invoice } from '@/types';
+import { useSupabaseQuery } from './useSupabaseQuery';
+import { useSyncStore } from '@/store/useSyncStore';
+import { supabaseReadOnly } from '@/lib/supabaseReadOnly';
 
 export interface DashboardStats {
     totalRevenue: number;
@@ -16,41 +16,29 @@ export interface DashboardStats {
 export function useDashboardData() {
     const { userData, user } = useAuth();
     const { lastSyncTime } = useRealtime();
-    const { cachedInvoices, cachedStats, currencyCode: cachedCurrency, setCache } = useDashboardCache();
     const { isOnline } = useSyncStore();
-    
-    const [invoices, setInvoices] = useState<Record<string, any>[]>(cachedInvoices || []);
-    const [loading, setLoading] = useState(!cachedInvoices?.length);
-    const [error, setError] = useState<string | null>(null);
-    const [stats, setStats] = useState<DashboardStats>(cachedStats || {
-        totalRevenue: 0,
-        outstanding: 0,
-        paidCount: 0,
-        strengthIndex: 0
-    });
-    const [currencyCode, setCurrencyCode] = useState(cachedCurrency || 'NGN');
 
-    useEffect(() => {
-        if (!userData && !user) return;
-        
-        const fetchDashboardData = async () => {
-            if (!isOnline) {
-                setLoading(false);
-                return;
-            }
+    const userId = user?.id || userData?.uid;
 
+    const { data, error, isLoading, isValidating } = useSupabaseQuery(
+        userId && isOnline ? ['dashboard', userId, lastSyncTime] : null,
+        async () => {
             try {
-                const userId = user?.id || userData?.uid;
-                if (!userId) return;
-                
-                const tData = await teamService.getTeamByUserId(userId);
+                const tData = await teamService.getTeamByUserId(userId!);
                 const teamId = tData?.id || userId;
                 const prefCurrency = tData?.preferred_currency || 'NGN';
-                setCurrencyCode(prefCurrency);
 
-                const data = await invoiceService.getInvoices(teamId, 100); 
-                const invs = data || [];
-                setInvoices(invs);
+                const { data: invsData, error: invsError } = await supabaseReadOnly
+                    .from('invoices')
+                    .select('*, clients(name, email, phone)')
+                    .eq('team_id', teamId)
+                    .order('created_at', { ascending: false })
+                    .limit(100);
+
+                if (invsError) {
+                    console.warn('[useDashboardData] Read replica fetch error:', invsError.message);
+                }
+                const invs = invsData || [];
 
                 let revenue = 0;
                 let outstandingAmount = 0;
@@ -76,26 +64,29 @@ export function useDashboardData() {
                     strengthIndex: strength
                 };
 
-                setStats(newStats);
-                setCache(invs, newStats, prefCurrency);
+                return { data: { invoices: invs as Invoice[], stats: newStats, currencyCode: prefCurrency as string }, error: null };
             } catch (err) {
-                console.error('Error fetching dashboard data:', err);
-                setError('Failed to load dashboard data.');
-                // Use already-destructured cachedInvoices from the hook — avoids getState() anti-pattern
-                if (!cachedInvoices?.length) {
-                    // Only show toast when there is truly no cached fallback
-                    const { toast } = await import('react-hot-toast');
-                    toast.error('Failed to load dashboard data. Please try refreshing.');
-                }
-            } finally {
-                setLoading(false);
+                return { data: null, error: err };
             }
-        };
-
-        fetchDashboardData();
-    }, [userData, user, lastSyncTime, isOnline]);
+        }
+    );
 
     const firstName = userData?.name ? userData.name.split(' ')[0] : 'Noble';
 
-    return { invoices, loading, error, stats, currencyCode, firstName };
+    const defaultStats = {
+        totalRevenue: 0,
+        outstanding: 0,
+        paidCount: 0,
+        strengthIndex: 0
+    };
+
+    return { 
+        invoices: data?.invoices || [], 
+        loading: isLoading || (!data && !error && isOnline), 
+        error: error ? 'Failed to load dashboard data.' : null, 
+        stats: data?.stats || defaultStats, 
+        currencyCode: data?.currencyCode || 'NGN', 
+        firstName,
+        isValidating
+    };
 }

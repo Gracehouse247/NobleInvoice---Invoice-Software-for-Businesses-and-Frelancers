@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { ArrowRight, Calendar, User, Search } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
+export const revalidate = 3600; // Revalidate every hour
+
 export const metadata: Metadata = {
     title: 'Blog — Invoice Tips, Business Card Guides & Billing Insights | NobleInvoice',
     description: 'NobleInvoice blog: expert guides on how to make invoices for free, business card creation tips, QR code tutorials, and billing software comparisons for small businesses.',

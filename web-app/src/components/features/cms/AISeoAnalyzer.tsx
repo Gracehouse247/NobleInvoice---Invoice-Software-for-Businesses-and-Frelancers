@@ -10,6 +10,7 @@ import {
   SmilePlus, ChevronsDown, ListOrdered, HelpCircle, Share2, Calendar, Send
 } from 'lucide-react';
 import SocialPublishModal from './SocialPublishModal';
+import { supabase } from '@/lib/supabase';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface SEOAnalysis {
@@ -173,13 +174,11 @@ export default function AISeoAnalyzer({
     setAnalyzeError('');
     setAnalysis(null);
     try {
-      const res = await fetch('/api/cms/seo-analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content, metaTitle, metaDescription, slug, focusKeyword, wordCount }),
+      const { data, error } = await supabase.functions.invoke('cms-seo-analyze', {
+        body: { title, content, metaTitle, metaDescription, slug, focusKeyword, wordCount },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Analysis failed');
+      if (error) throw new Error(error.message || 'Analysis failed');
+      if (data?.error) throw new Error(data.error);
       setAnalysis(data.analysis);
     } catch (err: any) {
       setAnalyzeError(err.message || 'Failed to analyze. Please try again.');
@@ -193,13 +192,11 @@ export default function AISeoAnalyzer({
     setAssistLoading(mode);
     setAssistResult(null);
     try {
-      const res = await fetch('/api/cms/ai-assist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode, content: content || title, title }),
+      const { data, error } = await supabase.functions.invoke('cms-ai-assist', {
+        body: { mode, content: content || title, title },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'AI request failed');
+      if (error) throw new Error(error.message || 'AI request failed');
+      if (data?.error) throw new Error(data.error);
       setAssistResult({ mode, text: data.result });
     } catch (err: any) {
       setAssistResult({ mode, text: `Error: ${err.message}` });

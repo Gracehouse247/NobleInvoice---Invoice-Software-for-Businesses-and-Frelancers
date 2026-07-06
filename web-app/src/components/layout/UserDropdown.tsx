@@ -95,7 +95,7 @@ export default function UserDropdown() {
                                 <div className="flex items-center justify-between mb-2">
                                     <p className="text-[11px] font-black text-[#166FBB] uppercase tracking-widest flex items-center gap-1.5">
                                         <Sparkles className="w-3.5 h-3.5" /> 
-                                        {userData.plan === 'elite' ? 'Noble Elite' : userData.plan === 'pro' ? 'Noble Pro' : 'Free Tier'}
+                                        {userData.plan === 'elite' ? 'Noble Elite' : userData.plan === 'pulse' ? 'Noble Pro' : 'Free Tier'}
                                     </p>
                                     {userData.plan === 'elite' && <Award className="w-4 h-4 text-[#166FBB]" />}
                                 </div>
@@ -178,3 +178,4 @@ export default function UserDropdown() {
         </div>
     );
 }
+

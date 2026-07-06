@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { 
     LayoutDashboard, FileText, Settings, Users, 
     MessageSquare, BarChart3, CreditCard, LogOut,
-    Plus, Image as ImageIcon, Send
+    Plus, ImageIcon, Send, Star
 } from 'lucide-react';
 import { clearAdminSession } from '@/lib/cmsApi';
 
@@ -93,6 +93,7 @@ export default function AdminSidebar({ isOpen = false, onClose = () => {} }: { i
                 <SectionHeader label="Operations" />
                 <SidebarItem icon={Users} label="User Management" href="/admin/users" active={pathname === '/admin/users'} />
                 <SidebarItem icon={MessageSquare} label="Support Desk" href="/admin/support" active={pathname === '/admin/support'} />
+                <SidebarItem icon={Star} label="Help Ratings" href="/admin/help-ratings" active={pathname === '/admin/help-ratings'} />
                 <SidebarItem icon={Send} label="Marketing" href="/admin/marketing" active={pathname === '/admin/marketing'} />
                 
                 <div className="my-3 border-t border-slate-100 mx-3" />

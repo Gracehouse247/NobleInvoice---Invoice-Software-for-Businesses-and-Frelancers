@@ -230,7 +230,7 @@ export const invoiceService = {
             query = query.lte('updated_at', lastUpdatedAt);
         }
 
-        const { error } = await query.select().single();
+        const { data, error } = await query.select().single();
         
         if (error) {
             if (error.code === 'PGRST116') {
@@ -238,6 +238,8 @@ export const invoiceService = {
             }
             throw error;
         }
+
+        // Gamification is now handled securely via Supabase database triggers (see 20260706010000_gamification_triggers.sql)
     },
 
     async getInvoiceByToken(token: string) {

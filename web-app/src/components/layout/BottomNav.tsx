@@ -14,11 +14,11 @@ export default function BottomNav() {
     const { userData } = useAuth();
     const { openUpgradeModal } = useUpgradeModal();
 
-    const hasPlanAccess = (requiredPlan?: 'pro' | 'elite') => {
+    const hasPlanAccess = (requiredPlan?: 'pulse' | 'elite') => {
         if (!requiredPlan) return true;
         const plan = userData?.plan || 'explorer';
         if (plan === 'admin' || plan === 'elite') return true;
-        if (requiredPlan === 'pro' && plan === 'pro' && userData?.subscriptionStatus === 'active') return true;
+        if (requiredPlan === 'pulse' && plan === 'pulse' && userData?.subscriptionStatus === 'active') return true;
         return false;
     };
 
@@ -58,4 +58,7 @@ export default function BottomNav() {
         </nav>
     );
 }
+
+
+
 

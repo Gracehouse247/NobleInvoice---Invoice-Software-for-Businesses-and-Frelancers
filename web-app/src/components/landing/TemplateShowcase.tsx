@@ -64,7 +64,19 @@ const SHOWCASE_TEMPLATES = TEMPLATES.filter(t => [
 
 const CATEGORIES = ['Creative', 'Geometric', 'Platinum', 'Professional'];
 
-export default function TemplateShowcase() {
+interface TemplateShowcaseProps {
+    title?: React.ReactNode;
+    subtitle?: React.ReactNode;
+}
+
+export default function TemplateShowcase({ 
+    title = (
+        <>
+            World-Class <span className="text-noble-blue">Invoice Design</span><br />For The 1%.
+        </>
+    ),
+    subtitle = "Every template is a masterpiece of financial clarity and brand authority. Choose a palette and watch your professional identity transform."
+}: TemplateShowcaseProps) {
     const [activeColor, setActiveColor] = useState(SHOWCASE_COLORS[0].value);
     const [activeCategory, setActiveCategory] = useState('Creative');
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -87,10 +99,10 @@ export default function TemplateShowcase() {
                 <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12 mb-20">
                     <div className="max-w-2xl">
                         <h2 className="font-inter text-4xl md:text-6xl font-black text-near-black mb-6 leading-[1.1] tracking-tighter">
-                            World-Class <span className="text-noble-blue">Invoice Design</span><br />For The 1%.
+                            {title}
                         </h2>
                         <p className="text-body-lg text-near-black/70 font-medium">
-                            Every template is a masterpiece of financial clarity and brand authority. Choose a palette and watch your professional identity transform.
+                            {subtitle}
                         </p>
                     </div>
 

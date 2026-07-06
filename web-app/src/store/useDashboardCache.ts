@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { Invoice } from '@/types';
 
 export interface DashboardStats {
     totalRevenue: number;
@@ -9,10 +10,10 @@ export interface DashboardStats {
 }
 
 interface DashboardCacheStore {
-    cachedInvoices: any[];
+    cachedInvoices: Invoice[];
     cachedStats: DashboardStats;
     currencyCode: string;
-    setCache: (invoices: any[], stats: DashboardStats, currencyCode: string) => void;
+    setCache: (invoices: Invoice[], stats: DashboardStats, currencyCode: string) => void;
     clearCache: () => void;
 }
 

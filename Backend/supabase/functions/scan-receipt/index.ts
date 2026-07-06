@@ -3,6 +3,7 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -107,11 +108,26 @@ serve(async (req) => {
         },
       };
     } else if (body.imageUrl) {
-      // Client provided a URL (e.g., from Supabase Storage)
+      // Prevent SSRF: ensure it is a Supabase Storage URL belonging to our project
+      if (!body.imageUrl.startsWith(SUPABASE_URL!)) {
+        return new Response(JSON.stringify({ error: "Invalid image URL. Only internal storage URLs are permitted." }), {
+          status: 400,
+          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+        });
+      }
+
+      const imgRes = await fetch(body.imageUrl);
+      if (!imgRes.ok) {
+        throw new Error("Failed to fetch image from internal storage.");
+      }
+      
+      const arrayBuffer = await imgRes.arrayBuffer();
+      const base64Str = encodeBase64(arrayBuffer);
+
       imagePart = {
-        fileData: {
-          mimeType: body.mimeType || "image/jpeg",
-          fileUri: body.imageUrl,
+        inlineData: {
+          mimeType: imgRes.headers.get("content-type") || "image/jpeg",
+          data: base64Str,
         },
       };
     } else {

@@ -1,7 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
 type AssistMode =
   | 'improve'
@@ -36,17 +45,36 @@ const SYSTEM_PROMPTS: Record<AssistMode, string> = {
   repurpose_newsletter: 'Transform the following blog post into a friendly email newsletter (300-400 words). Include a subject line at the top, a personal greeting, the key insights, and a CTA. Return only the newsletter.',
 };
 
-export async function POST(req: NextRequest) {
-  try {
-    const { mode, content, title }: { mode: AssistMode; content: string; title?: string } = await req.json();
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: CORS_HEADERS });
+  }
 
-    if (!mode || !content) {
-      return NextResponse.json({ error: 'mode and content are required.' }, { status: 400 });
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
     }
 
-    const systemPrompt = SYSTEM_PROMPTS[mode];
+    const { mode, content, title } = await req.json();
+
+    if (!mode || !content) {
+      return new Response(JSON.stringify({ error: 'mode and content are required.' }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+    }
+
+    const systemPrompt = SYSTEM_PROMPTS[mode as AssistMode];
     if (!systemPrompt) {
-      return NextResponse.json({ error: `Unknown mode: ${mode}` }, { status: 400 });
+      return new Response(JSON.stringify({ error: `Unknown mode: ${mode}` }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+    }
+
+    if (!GEMINI_API_KEY) {
+      return new Response(JSON.stringify({ error: "GEMINI_API_KEY is not configured on the Edge Function." }), {
+        status: 500,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
     }
 
     const contextualContent = title ? `Article Title: "${title}"\n\nContent:\n${content}` : content;
@@ -71,14 +99,17 @@ export async function POST(req: NextRequest) {
 
     if (!geminiRes.ok) {
       const errText = await geminiRes.text();
-      return NextResponse.json({ error: 'Gemini API error', details: errText }, { status: 502 });
+      return new Response(JSON.stringify({ error: 'Gemini API error', details: errText }), { status: 502, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
     }
 
     const geminiData = await geminiRes.json();
     const result = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    return NextResponse.json({ result });
+    return new Response(JSON.stringify({ result }), {
+      status: 200,
+      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+    });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
+    return new Response(JSON.stringify({ error: err.message || 'Internal server error' }), { status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
   }
-}
+});

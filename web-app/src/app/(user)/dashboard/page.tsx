@@ -11,6 +11,7 @@ import RecentAssets from '@/components/dashboard/RecentAssets';
 import { currencyService } from '@/lib/services/currencyService';
 import { QuickTourOverlay } from '@/components/ui/QuickTourOverlay';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import LeaderboardWidget from '@/components/portal/LeaderboardWidget';
 
 export default function DashboardPage() {
     const { invoices, loading, error, stats, currencyCode, firstName } = useDashboardData();
@@ -130,6 +131,12 @@ export default function DashboardPage() {
                     </div>
                     <div className="lg:col-span-4 h-full">
                         <RecentAssets invoices={invoices} currencyCode={currencyCode} />
+                    </div>
+                </div>
+                {/* 5. Gamification / Leaderboard */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-auto mb-12">
+                    <div className="lg:col-span-1 h-full">
+                        <LeaderboardWidget />
                     </div>
                 </div>
             </div>

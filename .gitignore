@@ -1,31 +1,85 @@
+# ============================================================
+# NobleInvoice Monorepo — .gitignore
+# ============================================================
+
+# -----------------------------------------------------------
+# ASSET / SAMPLE FOLDERS (not source code)
+# -----------------------------------------------------------
+Invoice type sample template/
+Window/
+Mac OS/
+*.pdf
+NobleInvoice.png
+
+# -----------------------------------------------------------
+# NODE / NEXT.JS
+# -----------------------------------------------------------
 node_modules/
 .next/
 out/
 build/
+dist/
+.vercel/
 
-# macOS
-.DS_Store
+# Next.js cache
+.cache/
+.npm
 
-# Env files
+# Debug/test scripts (not part of the app)
+web-app/test-*.mjs
+web-app/check-admin.mjs
+web-app/extract-pdf.mjs
+web-app/update_page.js
+
+# -----------------------------------------------------------
+# ENVIRONMENT / SECRETS
+# -----------------------------------------------------------
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 *.env
+secrets.json
 
-# Flutter
+# -----------------------------------------------------------
+# FLUTTER / DART
+# -----------------------------------------------------------
 .dart_tool/
-build/
-.pub-cache/
-.pub/
-/build/
 .flutter-plugins
 .flutter-plugins-dependencies
+.pub-cache/
+.pub/
+Mobile\ App/build/
+Mobile\ App/.dart_tool/
+**/build/flutter_assets/
+**/*.g.dart
+**/*.freezed.dart
 
-# Backend (Supabase/Functions)
-*.log
+# -----------------------------------------------------------
+# SUPABASE LOCAL DEV
+# -----------------------------------------------------------
 .supabase/
+supabase/.branches/
+supabase/.temp/
 
-# Secrets
-secrets.json
+# -----------------------------------------------------------
+# LOGS & OS FILES
+# -----------------------------------------------------------
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# -----------------------------------------------------------
+# EDITOR
+# -----------------------------------------------------------
+.vscode/settings.json
+.idea/
+*.suo
+*.user
+*.swp
+*.swo

@@ -42,15 +42,18 @@ export default function Footer() {
                     <div>
                         <p className="text-[10px] font-black text-near-black uppercase tracking-[0.3em] mb-8">Products</p>
                         <ul className="space-y-4">
-                            <li><Link className="text-near-black/50 font-bold hover:text-noble-blue transition-colors text-sm" href="/features/how-to-make-an-invoice-for-free">Invoice Engine</Link></li>
+                            <li><Link className="text-near-black/50 font-bold hover:text-noble-blue transition-colors text-sm" href="/invoice-generator">Free Invoice Generator</Link></li>
                             <li><Link className="text-near-black/50 font-bold hover:text-noble-blue transition-colors text-sm" href="/features/ai-invoice-generator">AI Invoice Generator</Link></li>
-                            <li><Link className="text-near-black/50 font-bold hover:text-noble-blue transition-colors text-sm" href="/features/how-to-make-an-invoice-on-my-phone">Expense Manager</Link></li>
-                            <li><Link className="text-near-black/50 font-bold hover:text-noble-blue transition-colors text-sm" href="/features/best-free-invoice-app">Global Settlements</Link></li>
-                            <li><Link className="text-near-black/50 font-bold hover:text-noble-blue transition-colors text-sm" href="/features/crm-engine">CRM Engine</Link></li>
-                            <li><Link className="text-near-black/50 font-bold hover:text-noble-blue transition-colors text-sm" href="/features/team-workspace">Team Workspace</Link></li>
-                            <li><Link className="text-near-black/50 font-bold hover:text-noble-blue transition-colors text-sm" href="/features/enterprise-scaling">Enterprise Scaling</Link></li>
-                            <li><Link className="text-near-black/50 font-bold hover:text-noble-blue transition-colors text-sm" href="/features/digital-business-cards">Business Cards Generator</Link></li>
-                            <li><Link className="text-near-black/50 font-bold hover:text-noble-blue transition-colors text-sm" href="/features/professional-identity">Professional Identity</Link></li>
+                            <li><Link className="text-near-black/50 font-bold hover:text-noble-blue transition-colors text-sm" href="/gamified-invoicing">Gamified Invoicing</Link></li>
+                            <li><Link className="text-near-black/50 font-bold hover:text-noble-blue transition-colors text-sm" href="/freelance-crm">Freelance CRM</Link></li>
+                            <li><Link className="text-near-black/50 font-bold hover:text-noble-blue transition-colors text-sm" href="/solutions/enterprise">Enterprise Billing Platform</Link></li>
+                            <li><Link className="text-near-black/50 font-bold hover:text-noble-blue transition-colors text-sm" href="/receipt-scanner">Receipt Scanner</Link></li>
+                            <li className="pt-2">
+                                <Link className="text-noble-blue font-bold hover:text-near-black transition-colors text-sm flex items-center gap-1 group" href="/features">
+                                    View all our features
+                                    <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                                </Link>
+                            </li>
                         </ul>
                     </div>
 

@@ -8,11 +8,11 @@ export default function PredictiveHub({ invoices = [], currencyCode = 'USD' }: {
     nextMonth.setMonth(nextMonth.getMonth() + 1);
     
     const projectedRevenue = invoices.filter(inv => {
-        if (inv.status === 'Paid') return false;
+        if (inv.status === 'paid') return false;
         if (!inv.due_date) return false;
         const dueDate = new Date(inv.due_date);
         return dueDate.getMonth() === nextMonth.getMonth() && dueDate.getFullYear() === nextMonth.getFullYear();
-    }).reduce((sum, inv) => sum + (inv.total || 0), 0);
+    }).reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
 
     const hasData = projectedRevenue > 0;
     return (

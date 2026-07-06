@@ -12,7 +12,7 @@ export default function FinalCTA() {
                 <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-noble-blue/5 border border-noble-blue/10 text-blue-800 font-black text-[10px] uppercase tracking-[0.3em] mb-12">
                     Initialize Your Account
                 </div>
-                <h2 className="font-inter text-hero text-slate-900 mb-12 tracking-tighter leading-[1.1]">
+                <h2 className="font-inter text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 mb-12 tracking-tighter leading-[1.1]">
                     Try it Right Now. <br /> <span className="text-noble-blue">No Risks, No Limits.</span>
                 </h2>
                 <p className="text-2xl text-slate-500 mb-20 max-w-2xl mx-auto font-black leading-relaxed">

@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 export interface UpgradeModalOptions {
     featureName: string;
-    requiredPlan: 'pro' | 'elite';
+    requiredPlan: 'pulse' | 'elite';
 }
 
 interface UpgradeModalContextType {

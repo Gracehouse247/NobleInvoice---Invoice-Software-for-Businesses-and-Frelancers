@@ -106,20 +106,62 @@ serve(async (req) => {
       });
     }
 
-    // 2. Fetch User Profile Preference Context (Multi-currency Awareness)
+    // 2. Fetch User Profile Preference Context & Validate Pro Tier
     let userPreferredCurrency = "NGN";
+    let userPlan = "free";
     try {
       const { data: profile } = await supabaseClient
         .from("profiles")
-        .select("preferred_currency")
+        .select("preferred_currency, plan")
         .eq("id", user.id)
         .single();
-      if (profile?.preferred_currency) {
-        userPreferredCurrency = profile.preferred_currency;
+      if (profile) {
+        if (profile.preferred_currency) userPreferredCurrency = profile.preferred_currency;
+        if (profile.plan) userPlan = profile.plan;
       }
     } catch (dbErr) {
-      console.warn("Could not query preferred currency from profile table:", dbErr);
+      console.warn("Could not query profile table:", dbErr);
     }
+
+    if (userPlan !== "pulse" && userPlan !== "elite") {
+      return new Response(JSON.stringify({ 
+        error: "Upgrade Required", 
+        reply: "AI features are exclusively available on the Pulse and Elite plans. Please upgrade to continue." 
+      }), {
+        status: 403,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
+    // 2b. Rate Limiting via ai_usage_logs
+    const serviceClient = createClient(SUPABASE_URL!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const monthYear = new Date().toISOString().substring(0, 7); // e.g. "2026-07"
+    
+    const { data: usageData, error: usageErr } = await serviceClient
+      .from("ai_usage_logs")
+      .select("calls_made")
+      .eq("user_id", user.id)
+      .eq("month_year", monthYear)
+      .maybeSingle();
+      
+    const callsMade = usageData?.calls_made || 0;
+    if (callsMade >= 100) {
+      return new Response(JSON.stringify({ 
+        error: "Quota Exceeded", 
+        reply: "You have reached your AI assistant limit of 100 queries this month. It will reset next month." 
+      }), {
+        status: 429,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
+    // Increment usage asynchronously
+    serviceClient.from("ai_usage_logs").upsert({
+      user_id: user.id,
+      month_year: monthYear,
+      calls_made: callsMade + 1,
+      updated_at: new Date().toISOString()
+    }, { onConflict: "user_id, month_year" }).then();
 
     // 3. Parse Body
     const { message, chatHistory, userContext } = await req.json();

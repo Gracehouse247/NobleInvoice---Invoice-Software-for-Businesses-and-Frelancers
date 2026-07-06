@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 import { TwitterApi } from 'twitter-api-v2';
 import axios from 'axios';
+import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit';
 
 // Initialize Twitter Client if keys are present
 const twitterClient = process.env.TWITTER_API_KEY ? new TwitterApi({
@@ -11,6 +13,28 @@ const twitterClient = process.env.TWITTER_API_KEY ? new TwitterApi({
 }) : null;
 
 export async function POST(req: NextRequest) {
+  // ── 1. Auth Gate ──────────────────────────────────────────────────
+  const supabaseResponse = NextResponse.next();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) { return req.cookies.get(name)?.value; },
+        set() {},
+        remove() {},
+      },
+    }
+  );
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // ── 2. Rate Limiting (5 publishes per minute per user) ────────────
+  const { allowed, remaining, resetMs } = rateLimit(`social-publish:${user.id}`, 5, 60_000);
+  if (!allowed) return rateLimitResponse(resetMs);
+
   try {
     const { platform, content, accessToken } = await req.json();
 
@@ -29,28 +53,25 @@ export async function POST(req: NextRequest) {
       
       let result;
       if (tweets.length > 1) {
-        // Send a thread
         result = await twitterClient.v2.tweetThread(tweets);
       } else {
-        // Send a single tweet
         result = await twitterClient.v2.tweet(tweets[0]);
       }
 
-      return NextResponse.json({ success: true, result });
+      return NextResponse.json({ success: true, result }, {
+        headers: { 'X-RateLimit-Remaining': String(remaining) }
+      });
 
     } else if (platform === 'linkedin') {
       if (!accessToken) {
         return NextResponse.json({ error: 'LinkedIn Access Token required' }, { status: 400 });
       }
       
-      // We will post to LinkedIn via the provided user access token
-      // First, get the user's URN
       const meResponse = await axios.get('https://api.linkedin.com/v2/userinfo', {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
-      const sub = meResponse.data.sub; // This is the person URN identifier
+      const sub = meResponse.data.sub;
 
-      // Create a UGC Post (or Share on LinkedIn)
       const postBody = {
         author: `urn:li:person:${sub}`,
         lifecycleState: 'PUBLISHED',
@@ -73,13 +94,14 @@ export async function POST(req: NextRequest) {
         }
       });
 
-      return NextResponse.json({ success: true, result: liResult.data });
+      return NextResponse.json({ success: true, result: liResult.data }, {
+        headers: { 'X-RateLimit-Remaining': String(remaining) }
+      });
     }
 
     return NextResponse.json({ error: 'Unsupported platform' }, { status: 400 });
   } catch (error: any) {
     console.error('Publish Error:', error);
-    // Twitter API v2 errors usually have nested data
     const msg = error?.response?.data?.detail || error.message || 'Failed to publish';
     return NextResponse.json({ error: msg }, { status: 500 });
   }

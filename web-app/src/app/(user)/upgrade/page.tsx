@@ -251,7 +251,7 @@ export default function UpgradePage() {
     const displayedPlans = [
         ...SUBSCRIPTION_PLANS.filter(p => {
             if (p.id === 'explorer') return false;
-            if (userData?.plan === 'pro' && p.id === 'pro') return false;
+            if (userData?.plan === 'pulse' && p.id === 'pro') return false;
             return true;
         }),
         PAYG_PLAN
@@ -277,7 +277,7 @@ export default function UpgradePage() {
                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Your Current Plan</p>
                             <div className="flex items-center gap-3">
                                 <h3 className="text-2xl font-black text-slate-900 uppercase" style={{ fontFamily: 'Clash Display, Syne, Inter, sans-serif' }}>
-                                    {userData.plan === 'explorer' ? 'Starter' : userData.plan === 'pro' ? 'Noble Pulse' : 'Elite'}
+                                    {userData.plan === 'explorer' ? 'Starter' : userData.plan === 'pulse' ? 'Noble Pulse' : 'Elite'}
                                 </h3>
                                 <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${
                                     userData.subscriptionStatus === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
@@ -461,5 +461,6 @@ export default function UpgradePage() {
         </div>
     );
 }
+
 
 

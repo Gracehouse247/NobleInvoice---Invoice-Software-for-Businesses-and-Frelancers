@@ -303,8 +303,8 @@ export default function PricingPage() {
 
     const displayedPlans = user 
         ? [
-            ...(['pro', 'elite'].includes(userData?.plan || '') ? [] : [PAYG_PLAN]),
-            ...SUBSCRIPTION_PLANS.filter(p => p.id !== 'explorer' && (userData?.plan === 'pro' ? p.id !== 'pro' : true))
+            ...(['pulse', 'elite'].includes(userData?.plan || '') ? [] : [PAYG_PLAN]),
+            ...SUBSCRIPTION_PLANS.filter(p => p.id !== 'explorer' && (userData?.plan === 'pulse' ? p.id !== 'pulse' : true))
           ]
         : [
             SUBSCRIPTION_PLANS.find(p => p.id === 'explorer'),

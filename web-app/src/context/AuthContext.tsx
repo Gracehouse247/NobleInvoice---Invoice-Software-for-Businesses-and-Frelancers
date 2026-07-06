@@ -69,6 +69,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [limits, setLimits] = useState<UserLimits | null>(null);
     const [features, setFeatures] = useState<UserFeatures | null>(null);
     const [loading, setLoading] = useState(true);
+    
+    // Track the last fetched user ID to prevent redundant fetches on token refresh
+    const lastFetchedUserId = React.useRef<string | null>(null);
 
     const fetchUserProfile = async (currentUser: User) => {
         try {
@@ -141,15 +144,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     useEffect(() => {
-        // Skip AuthContext processing on admin routes — the admin layout
-        // handles its own auth check independently. This prevents the race
-        // condition where onAuthStateChange fires during admin OTP login
-        // and triggers user dashboard redirects.
-        const isAdminRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
-        if (isAdminRoute) {
-            setLoading(false);
-            return;
-        }
+
 
         // Safety timeout — if auth hasn't resolved in 6s, unblock the UI
         const timeout = setTimeout(() => {
@@ -163,12 +158,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             setUser(currentUser);
             if (currentUser) {
-                await fetchUserProfile(currentUser);
+                if (lastFetchedUserId.current !== currentUser.id) {
+                    await fetchUserProfile(currentUser);
+                    lastFetchedUserId.current = currentUser.id;
+                }
                 setLoading(false);
             } else {
                 setUserData(null);
                 setLimits(null);
                 setFeatures(null);
+                lastFetchedUserId.current = null;
                 setLoading(false);
             }
         }).catch((err) => {
@@ -179,20 +178,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         // 2. Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            // Double-check we're still not on admin routes (user may have navigated)
-            if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
-                return;
-            }
+
 
             const currentUser = session?.user || null;
             setUser(currentUser);
             
             if (currentUser) {
-                await fetchUserProfile(currentUser);
+                if (lastFetchedUserId.current !== currentUser.id) {
+                    await fetchUserProfile(currentUser);
+                    lastFetchedUserId.current = currentUser.id;
+                }
             } else {
                 setUserData(null);
                 setLimits(null);
                 setFeatures(null);
+                lastFetchedUserId.current = null;
             }
             setLoading(false);
         });
@@ -223,11 +223,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } catch (err) {
             console.error('Logout error:', err);
         } finally {
-            // Clear state only after signOut resolves (success or error)
             setUser(null);
             setUserData(null);
             setLimits(null);
             setFeatures(null);
+            lastFetchedUserId.current = null;
             if (typeof window !== 'undefined') {
                 window.location.href = '/login';
             }

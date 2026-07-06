@@ -1,37 +1,47 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/rateLimit';
 
-// We use the service role key to bypass RLS for this specific public route.
-// This allows unauthenticated clients to view their invoice via the secure tracking token.
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+// Strictly use service role key — never fall back to anon key for this route
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function GET(
     request: Request,
     { params }: { params: Promise<{ token: string }> }
 ) {
+    // ── Rate Limiting (30 requests per minute per IP) ─────────────────
+    const ip = getClientIp(request);
+    const { allowed, resetMs } = rateLimit(`portal-invoice:${ip}`, 30, 60_000);
+    if (!allowed) return rateLimitResponse(resetMs);
+
     try {
-        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
         const { token } = await params;
 
         if (!token) {
             return NextResponse.json({ error: 'Missing tracking token' }, { status: 400 });
         }
 
-        // Fetch the invoice using the admin client
+        // Fetch the invoice using the admin client with scoped field selection
+        // We deliberately exclude sensitive team fields (api keys, config, etc.)
         const { data: invoice, error: invoiceError } = await supabaseAdmin
             .from('invoices')
-            .select('*, clients(*), invoice_items(*), teams(*)')
+            .select(`
+                *,
+                clients(id, name, email, phone, address, city, country),
+                invoice_items(*),
+                teams(id, name, logo_url, preferred_currency)
+            `)
             .eq('tracking_token', token)
             .single();
 
-        if (invoiceError) {
-            console.error('[API Portal] Invoice fetch error:', invoiceError);
+        if (invoiceError || !invoice) {
             return NextResponse.json({ error: 'Invoice not found or invalid token' }, { status: 404 });
         }
 
-        // Optionally, increment view count or set to viewed if currently 'sent'
-        // We do this asynchronously so it doesn't block the response
+        // Asynchronously update view tracking without blocking the response
         if (invoice.status === 'sent') {
             supabaseAdmin
                 .from('invoices')
@@ -57,11 +67,13 @@ export async function GET(
                 });
         }
 
-        // We sanitize the response so we don't leak sensitive team details
-        // like private flutterwave keys if they are somehow stored in teams.
-        // For now, we return exactly what the UI needs.
-        
-        return NextResponse.json({ invoice }, { status: 200 });
+        return NextResponse.json({ invoice }, {
+            status: 200,
+            headers: {
+                // Prevent CDN caching of private invoice data
+                'Cache-Control': 'no-store, no-cache, must-revalidate',
+            },
+        });
 
     } catch (error: any) {
         console.error('[API Portal] Unexpected error:', error);

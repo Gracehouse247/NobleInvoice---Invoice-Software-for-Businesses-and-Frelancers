@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import Papa from 'papaparse';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
     Plus, Search, Filter, MoreHorizontal, 
     Users, Phone, Mail, Building,
     ArrowUpRight, Tag, Zap, Sparkles,
-    LayoutGrid, List, User
+    LayoutGrid, List, User, Download, Upload
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth, useFeatureGate } from '@/context/AuthContext';
@@ -27,6 +28,7 @@ export default function ClientsPage() {
     const [clients, setClients] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+    const fileInputRef = useRef<HTMLInputElement>(null);
     
     // PAYG Bundle & Limits
     const isFreeUser = userData?.plan === 'explorer' || !userData;
@@ -53,6 +55,71 @@ export default function ClientsPage() {
 
         fetchClients();
     }, [user]);
+
+    const handleExportCSV = () => {
+        if (clients.length === 0) return toast('No clients to export');
+        const csv = Papa.unparse(clients.map(c => ({
+            Name: c.name,
+            Email: c.email || '',
+            Phone: c.phone ? `${c.country_code || ''} ${c.phone}` : '',
+            Company: c.company || '',
+            Address: c.address || '',
+            Status: c.lead_status || 'active'
+        })));
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `noble_clients_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Clients exported successfully');
+    };
+
+    const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: async (results) => {
+                const rows = results.data as any[];
+                if (rows.length === 0) return toast.error('CSV is empty');
+                if (clients.length + rows.length > maxClients) {
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                    return setShowPaygModal(true);
+                }
+                
+                const toastId = toast.loading('Importing clients...');
+                const tData = await teamService.getTeamByUserId(user?.id!);
+                const teamId = tData?.id || user?.id;
+
+                const newClients = rows.map(row => ({
+                    team_id: teamId,
+                    name: row.Name || row.name || 'Unknown Client',
+                    email: row.Email || row.email || null,
+                    phone: row.Phone || row.phone || null,
+                    company: row.Company || row.company || null,
+                    address: row.Address || row.address || null,
+                    lead_status: row.Status || row.status || row.lead_status || 'active'
+                }));
+
+                try {
+                    await clientService.createClients(newClients);
+                    toast.success(`Successfully imported ${newClients.length} clients!`, { id: toastId });
+                    const data = await clientService.getClients(teamId!);
+                    setClients(data || []);
+                } catch (err: any) {
+                    toast.error('Failed to import clients', { id: toastId });
+                    console.error('Import error:', err);
+                }
+                
+                if (fileInputRef.current) fileInputRef.current.value = '';
+            }
+        });
+    };
 
     const getStrengthIndex = (client: any) => {
         // Deterministic score based on client data instead of Math.random()
@@ -125,6 +192,13 @@ export default function ClientsPage() {
                             <motion.button whileTap={{ scale: 0.95 }} onClick={() => setViewMode('list')} className={`p-3 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-noble-blue' : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'}`}><List size={18} /></motion.button>
                             <motion.button whileTap={{ scale: 0.95 }} onClick={() => setViewMode('grid')} className={`p-3 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-noble-blue' : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'}`}><LayoutGrid size={18} /></motion.button>
                         </div>
+                        <input type="file" accept=".csv" ref={fileInputRef} className="hidden" onChange={handleImportCSV} />
+                        <motion.button whileTap={{ scale: 0.95 }} onClick={() => fileInputRef.current?.click()} className="p-3 bg-white/60 backdrop-blur-md border border-white/60 text-slate-500 rounded-2xl hover:border-noble-blue/30 hover:text-noble-blue hover:bg-white transition-all shadow-sm" title="Import CSV">
+                            <Upload size={18} />
+                        </motion.button>
+                        <motion.button whileTap={{ scale: 0.95 }} onClick={handleExportCSV} className="p-3 bg-white/60 backdrop-blur-md border border-white/60 text-slate-500 rounded-2xl hover:border-noble-blue/30 hover:text-noble-blue hover:bg-white transition-all shadow-sm" title="Export CSV">
+                            <Download size={18} />
+                        </motion.button>
                         <motion.div whileTap={{ scale: 0.95 }} className="inline-flex">
                             <button 
                                 onClick={(e) => {

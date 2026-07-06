@@ -14,7 +14,7 @@ export default function BillingPage() {
     const [loading, setLoading] = useState(true);
 
     const isExplorer = !userData?.plan || userData?.plan === 'explorer';
-    const isPro = userData?.plan === 'pro';
+    const isPro = userData?.plan === 'pulse';
     const isElite = userData?.plan === 'elite';
 
     const currentPlanDetails = SUBSCRIPTION_PLANS.find(p => p.id === userData?.plan) || SUBSCRIPTION_PLANS[0];
@@ -208,3 +208,4 @@ export default function BillingPage() {
         </div>
     );
 }
+

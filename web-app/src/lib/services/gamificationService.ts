@@ -1,9 +1,9 @@
 import { supabase } from '@/lib/supabase';
 import { GamificationModel, UserData } from '@/types';
 
-export const XP_PER_TASK = 25;
-export const XP_PER_HABIT = 10;
-export const XP_PER_NOTE = 5;
+export const XP_PER_PAYMENT_RECEIVED = 100;
+export const XP_PER_INVOICE_SENT = 50;
+export const XP_PER_RECEIPT_SCANNED = 25;
 
 export const XP_THRESHOLDS: Record<number, number> = {
     1: 200, 2: 500, 3: 900, 4: 1400, 5: 2000, 6: 2800, 7: 3800, 8: 5000, 9: 6500, 10: 99999,
@@ -22,9 +22,9 @@ export const computeLevel = (xp: number): number => {
 };
 
 export const BADGES = [
-    { id: 'b1', name: 'First Step', desc: 'Complete your first task', icon: '🥇', xp: 50, isUnlocked: (g: GamificationModel) => g.tasksCompleted >= 1 },
-    { id: 'b2', name: 'Habit Builder', desc: '7-day habit streak', icon: '🔥', xp: 100, isUnlocked: (g: GamificationModel) => g.habitsLogged >= 7 },
-    { id: 'b3', name: 'Focus Master', desc: 'Complete 10 tasks', icon: '🧠', xp: 200, isUnlocked: (g: GamificationModel) => g.tasksCompleted >= 10 },
+    { id: 'b1', name: 'First Blood', desc: 'Send your first invoice', icon: '🥇', xp: 50, isUnlocked: (g: GamificationModel) => g.invoicesSent >= 1 },
+    { id: 'b2', name: 'Cash Flow King', desc: 'Receive 5 payments', icon: '👑', xp: 100, isUnlocked: (g: GamificationModel) => g.paymentsReceived >= 5 },
+    { id: 'b3', name: 'Automation Pro', desc: 'Scan 10 receipts', icon: '🤖', xp: 200, isUnlocked: (g: GamificationModel) => g.receiptsScanned >= 10 },
 ];
 
 export interface GamificationResult {
@@ -56,10 +56,10 @@ export const gamificationService = {
                     xp: data.xp,
                     level: data.level,
                     unlockedBadges: data.unlocked_badges || [],
-                    tasksCompleted: data.tasks_completed,
-                    habitsLogged: data.habits_logged,
-                    notesCreated: data.notes_created,
-                    currentStreak: data.current_streak
+                    invoicesSent: data.invoices_sent || 0,
+                    paymentsReceived: data.payments_received || 0,
+                    receiptsScanned: data.receipts_scanned || 0,
+                    currentStreak: data.current_streak || 0
                 });
             }
         });
@@ -79,10 +79,10 @@ export const gamificationService = {
                         xp: data.xp,
                         level: data.level,
                         unlockedBadges: data.unlocked_badges || [],
-                        tasksCompleted: data.tasks_completed,
-                        habitsLogged: data.habits_logged,
-                        notesCreated: data.notes_created,
-                        currentStreak: data.current_streak
+                        invoicesSent: data.invoices_sent || 0,
+                        paymentsReceived: data.payments_received || 0,
+                        receiptsScanned: data.receipts_scanned || 0,
+                        currentStreak: data.current_streak || 0
                     });
                 }
             })
@@ -119,9 +119,9 @@ export const gamificationService = {
                             xp: d.xp,
                             level: d.level,
                             unlockedBadges: d.unlocked_badges || [],
-                            tasksCompleted: 0,
-                            habitsLogged: 0,
-                            notesCreated: 0,
+                            invoicesSent: 0,
+                            paymentsReceived: 0,
+                            receiptsScanned: 0,
                             currentStreak: 0
                         }
                     })) as unknown as UserData[];
@@ -131,7 +131,7 @@ export const gamificationService = {
         return () => {};
     },
 
-    async _processEvent(uid: string, eventType: 'task' | 'habit' | 'note', habitStreak?: number): Promise<GamificationResult | null> {
+    async _processEvent(uid: string, eventType: 'invoice' | 'payment' | 'receipt'): Promise<GamificationResult | null> {
         const { data: current, error } = await supabase
             .from('user_gamification')
             .select('*')
@@ -145,18 +145,15 @@ export const gamificationService = {
         
         let currentBadges = Array.isArray(current.unlocked_badges) ? [...current.unlocked_badges] : [];
 
-        if (eventType === 'task') {
-            xpAdded = XP_PER_TASK;
-            updateData.tasks_completed = current.tasks_completed + 1;
-        } else if (eventType === 'habit') {
-            xpAdded = XP_PER_HABIT;
-            updateData.habits_logged = current.habits_logged + 1;
-            if (habitStreak !== undefined && habitStreak > current.current_streak) {
-                updateData.current_streak = habitStreak;
-            }
-        } else if (eventType === 'note') {
-            xpAdded = XP_PER_NOTE;
-            updateData.notes_created = current.notes_created + 1;
+        if (eventType === 'invoice') {
+            xpAdded = XP_PER_INVOICE_SENT;
+            updateData.invoices_sent = (current.invoices_sent || 0) + 1;
+        } else if (eventType === 'payment') {
+            xpAdded = XP_PER_PAYMENT_RECEIVED;
+            updateData.payments_received = (current.payments_received || 0) + 1;
+        } else if (eventType === 'receipt') {
+            xpAdded = XP_PER_RECEIPT_SCANNED;
+            updateData.receipts_scanned = (current.receipts_scanned || 0) + 1;
         }
 
         const newXp = current.xp + xpAdded;
@@ -171,10 +168,10 @@ export const gamificationService = {
             xp: newXp,
             level: newLevel,
             unlockedBadges: currentBadges,
-            tasksCompleted: updateData.tasks_completed ?? current.tasks_completed,
-            habitsLogged: updateData.habits_logged ?? current.habits_logged,
-            notesCreated: updateData.notes_created ?? current.notes_created,
-            currentStreak: updateData.current_streak ?? current.current_streak
+            invoicesSent: updateData.invoices_sent ?? current.invoices_sent,
+            paymentsReceived: updateData.payments_received ?? current.payments_received,
+            receiptsScanned: updateData.receipts_scanned ?? current.receipts_scanned,
+            currentStreak: current.current_streak
         };
 
         const newBadgesUnlocked: string[] = [];
@@ -203,7 +200,7 @@ export const gamificationService = {
         };
     },
 
-    async onTaskCompleted(uid: string) { return this._processEvent(uid, 'task'); },
-    async onHabitLogged(uid: string, habitStreak?: number) { return this._processEvent(uid, 'habit', habitStreak); },
-    async onNoteCreated(uid: string) { return this._processEvent(uid, 'note'); }
+    async onInvoiceSent(uid: string) { return this._processEvent(uid, 'invoice'); },
+    async onPaymentReceived(uid: string) { return this._processEvent(uid, 'payment'); },
+    async onReceiptScanned(uid: string) { return this._processEvent(uid, 'receipt'); }
 };

@@ -16,7 +16,7 @@ export default function GrowthReportsPage() {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<any>(null);
 
-    const currencySymbol = userData?.currency ? currencyService.getSymbol(userData.currency) : '₦';
+    const currencySymbol = userData?.preferred_currency ? currencyService.getCurrencySymbol(userData.preferred_currency) : '₦';
 
     useEffect(() => {
         if (!user) return;
@@ -98,8 +98,7 @@ export default function GrowthReportsPage() {
                             icon={BarChart3}
                             title="No data available"
                             description={`There are no invoices in the ${activeRange} period. Adjust your date range or create a new invoice.`}
-                            actionLabel="Create Invoice"
-                            onAction={() => window.location.href = '/invoices/new'}
+                            actions={[{ label: 'Create Invoice', onClick: () => window.location.href = '/invoices/new', variant: 'primary' }]}
                         />
                     </div>
                 ) : (

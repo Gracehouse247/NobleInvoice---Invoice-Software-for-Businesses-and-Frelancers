@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { ShieldCheck, X } from 'lucide-react';
+import { Cookie } from 'lucide-react';
 
 export default function CookieConsent() {
     const [mounted, setMounted] = useState(false);
@@ -31,44 +31,54 @@ export default function CookieConsent() {
         <AnimatePresence>
             {isVisible && (
                 <motion.div
-                    initial={{ y: 100, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: 100, opacity: 0 }}
-                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="fixed bottom-0 left-0 right-0 z-[100] p-4 md:p-6 pointer-events-none"
+                    initial={{ x: -40, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: -40, opacity: 0 }}
+                    transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+                    className="fixed bottom-5 left-5 z-[100] pointer-events-auto max-w-[300px] w-full"
                 >
-                    <div className="max-w-4xl mx-auto bg-white/90 backdrop-blur-xl border border-noble-blue/20 rounded-2xl shadow-2xl p-5 md:p-6 pointer-events-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                        <div className="flex items-start gap-4">
-                            <div className="p-3 bg-noble-blue/10 rounded-xl hidden sm:block shrink-0">
-                                <ShieldCheck className="w-6 h-6 text-noble-blue" />
+                    <div className="bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-2xl shadow-2xl shadow-black/10 overflow-hidden">
+                        {/* Top accent bar */}
+                        <div className="h-0.5 w-full bg-gradient-to-r from-noble-blue via-blue-400 to-cyan-400" />
+
+                        <div className="p-4">
+                            {/* Icon + Title */}
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="w-7 h-7 rounded-lg bg-noble-blue/10 flex items-center justify-center shrink-0">
+                                    <Cookie className="w-3.5 h-3.5 text-noble-blue" />
+                                </div>
+                                <h3 className="font-bold text-slate-900 text-sm tracking-tight">
+                                    Your Privacy Matters
+                                </h3>
                             </div>
-                            <div>
-                                <h3 className="font-bold text-slate-900 text-sm md:text-base mb-1">We respect your privacy</h3>
-                                <p className="text-slate-600 text-xs md:text-sm max-w-2xl leading-relaxed">
-                                    We use essential cookies to make our site work. With your consent, we may also use non-essential cookies to improve user experience, personalize content, and analyze website traffic. For these reasons, we may share your site usage data with our analytics partners. By clicking "Accept All", you agree to our website's cookie use as described in our <Link href="/privacy" className="text-noble-blue hover:underline font-semibold">Privacy Policy</Link>.
-                                </p>
+
+                            {/* Body */}
+                            <p className="text-slate-500 text-[11px] leading-relaxed mb-4">
+                                We use essential cookies to keep our platform secure and running smoothly. Optional cookies help us improve performance and personalize your experience. Manage your preferences anytime in our{' '}
+                                <Link
+                                    href="/privacy"
+                                    className="text-noble-blue font-semibold hover:underline underline-offset-2"
+                                >
+                                    Privacy Policy
+                                </Link>
+                                .
+                            </p>
+
+                            {/* Buttons */}
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => handleConsent('declined')}
+                                    className="flex-1 py-1.5 text-[11px] font-semibold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                                >
+                                    Decline
+                                </button>
+                                <button
+                                    onClick={() => handleConsent('accepted')}
+                                    className="flex-1 py-1.5 text-[11px] font-bold text-white bg-noble-blue hover:bg-blue-700 rounded-lg transition-all shadow-md shadow-noble-blue/25 hover:shadow-noble-blue/40"
+                                >
+                                    Accept All
+                                </button>
                             </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-3 w-full md:w-auto shrink-0 justify-end mt-2 md:mt-0">
-                            <button
-                                onClick={() => handleConsent('declined')}
-                                className="px-5 py-2.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors whitespace-nowrap"
-                            >
-                                Decline Optional
-                            </button>
-                            <button
-                                onClick={() => handleConsent('accepted')}
-                                className="px-6 py-2.5 text-xs font-bold text-white bg-noble-blue hover:bg-blue-700 rounded-xl transition-colors shadow-lg shadow-noble-blue/20 whitespace-nowrap"
-                            >
-                                Accept All
-                            </button>
-                            <button 
-                                onClick={() => setIsVisible(false)}
-                                className="p-2.5 text-slate-400 hover:bg-slate-100 rounded-xl ml-2 md:hidden transition-colors"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
                         </div>
                     </div>
                 </motion.div>

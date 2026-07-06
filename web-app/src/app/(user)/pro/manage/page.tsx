@@ -13,7 +13,7 @@ export default function SubscriptionManagePage() {
     // Derived plan with legacy fallback
     const plan = userData?.plan || ((userData?.subscriptionStatus as any) === 'elite' ? 'elite' : (userData?.subscriptionStatus as any) === 'pro' ? 'pro' : 'explorer');
     const isPremium = ['pro', 'elite', 'admin'].includes(plan);
-    const planName = plan === 'elite' ? 'Noble Elite' : plan === 'pro' ? 'Noble Pro' : 'Explorer (Free)';
+    const planName = plan === 'elite' ? 'Noble Elite' : plan === 'pulse' ? 'Noble Pro' : 'Explorer (Free)';
 
     const handleRestore = async () => {
         setLoading(true);
@@ -84,4 +84,5 @@ export default function SubscriptionManagePage() {
         </div>
     );
 }
+
 

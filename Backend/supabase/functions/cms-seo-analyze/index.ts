@@ -1,14 +1,42 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
-export async function POST(req: NextRequest) {
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: CORS_HEADERS });
+  }
+
   try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
     const { title, content, metaTitle, metaDescription, slug, focusKeyword, wordCount } = await req.json();
 
     if (!title && !content) {
-      return NextResponse.json({ error: 'Title and content are required.' }, { status: 400 });
+      return new Response(JSON.stringify({ error: 'Title and content are required.' }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+    }
+
+    if (!GEMINI_API_KEY) {
+      return new Response(JSON.stringify({ error: "GEMINI_API_KEY is not configured on the Edge Function." }), {
+        status: 500,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
     }
 
     const prompt = `You are an expert SEO analyst. Analyze the following blog post and return a detailed JSON SEO report.
@@ -75,7 +103,7 @@ Return ONLY a valid JSON object (no markdown, no code blocks) with this exact st
 
     if (!geminiRes.ok) {
       const errText = await geminiRes.text();
-      return NextResponse.json({ error: 'Gemini API error', details: errText }, { status: 502 });
+      return new Response(JSON.stringify({ error: 'Gemini API error', details: errText }), { status: 502, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
     }
 
     const geminiData = await geminiRes.json();
@@ -89,11 +117,14 @@ Return ONLY a valid JSON object (no markdown, no code blocks) with this exact st
     try {
       analysis = JSON.parse(jsonStr);
     } catch {
-      return NextResponse.json({ error: 'Failed to parse AI response', raw: rawText }, { status: 500 });
+      return new Response(JSON.stringify({ error: 'Failed to parse AI response', raw: rawText }), { status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
     }
 
-    return NextResponse.json({ analysis });
+    return new Response(JSON.stringify({ analysis }), {
+      status: 200,
+      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+    });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
+    return new Response(JSON.stringify({ error: err.message || 'Internal server error' }), { status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
   }
-}
+});

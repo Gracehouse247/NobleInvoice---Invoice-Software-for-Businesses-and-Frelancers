@@ -11,6 +11,8 @@ import TableOfContents from './TableOfContents';
 
 type Props = { params: Promise<{ slug: string }> };
 
+export const revalidate = 3600; // Revalidate every hour
+
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -149,7 +151,19 @@ const markdownComponents: any = {
     ),
 };
 
-// ─── METADATA ─────────────────────────────────────────────────────────────────
+// ─── METADATA & STATIC PARAMS ───────────────────────────────────────────────────
+export async function generateStaticParams() {
+    const { data: posts } = await supabase
+        .from('seo_articles')
+        .select('slug')
+        .eq('status', 'published');
+        
+    if (!posts) return [];
+    
+    return posts.map((post) => ({
+        slug: post.slug,
+    }));
+}
 export async function generateMetadata({ params }: Props, parent: ResolvingMetadata): Promise<Metadata> {
     const { slug } = await params;
     const { data: post } = await supabase.from('seo_articles').select('*').eq('slug', slug).single();

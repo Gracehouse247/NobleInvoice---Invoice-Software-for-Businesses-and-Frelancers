@@ -30,6 +30,8 @@
   --background: #FFFFFF;
   --foreground: #050B1A;
   --primary: #006970;
+  /* Permanently lock to light mode — prevents OS/browser dark mode overrides */
+  color-scheme: light;
 }
 
 /* Smooth scrolling for TOC anchor links */

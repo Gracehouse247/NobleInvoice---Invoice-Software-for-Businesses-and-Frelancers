@@ -26,6 +26,16 @@ export const clientService = {
         return data;
     },
 
+    async createClients(clientsData: any[]) {
+        const { data, error } = await supabase
+            .from('clients')
+            .insert(clientsData)
+            .select();
+            
+        if (error) throw error;
+        return data;
+    },
+
     async getPortalData(token: string) {
         const { data, error } = await supabase.rpc('get_client_portal_data', { p_token: token });
         if (error) {
